@@ -1,0 +1,39 @@
+# Copyright (c) 2025 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+# References:
+# * Target features: https://doc.rust-lang.org/nightly/nightly-rustc/src/rustc_target/target_features.rs.html
+
+[unstable]
+build-std = [ "core" ]
+
+[build]
+# Keep our output directory top-level, as if Cargo actually had first-class
+# support for multi-target workspaces.
+target-dir = "../target"
+
+# Try to build for all supported targets by default.
+target = [ "riscv64imac-unknown-none-elf" ]
+
+# target.*.rustflags are additive amongst themselves, but build.rustflags is
+# mutually exclusive.
+#
+# See https://github.com/rust-lang/cargo/issues/5376.
+[target.'cfg(all())']
+rustflags = [
+    "-Clinker=rust-lld",
+    "-Cpanic=abort",
+    "-Ccode-model=medium",
+
+    # The kernel (library) build script makes the appropriate "kernel.ld" as a
+    # relative path available to links for apps.
+    "-Clink-arg=-Tkernel.ld"
+]
+
+[target.riscv64imac-unknown-none-elf]
+rustflags = [
+    "-Ctarget-feature=+zba,+zbb,+zbs,+zkt"
+]
