@@ -5,10 +5,9 @@
 // https://opensource.org/licenses/MIT
 
 use core::arch::{global_asm, naked_asm};
+use cpuarch::riscv::Sstatus;
 
 const STACK_SIZE: u64 = 0x1000; // 4KiB
-
-const SSTATUS_SIE: u64 = 0b1; // Supervisor Interrupt Enable
 
 // TODO: Define this via a more generic asm object macro?
 global_asm!(
@@ -69,6 +68,6 @@ extern "C" fn _start() {
 
             call hark_main
             "#,
-            sstatus_sie = const SSTATUS_SIE)
+            sstatus_sie = const Sstatus::SIE_BIT)
     }
 }

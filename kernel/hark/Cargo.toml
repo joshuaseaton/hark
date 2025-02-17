@@ -24,5 +24,8 @@ crate-type = [ "rlib" ]
 # Whether hark is expected to be booted in machine mode on RISC-V targets.
 riscv_m_mode = []
 
+[dependencies]
+cpuarch = { path = "../../lib/cpuarch" }
+
 [lints]
 workspace = true

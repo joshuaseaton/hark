@@ -1,5 +1,5 @@
 {
-  "rust-analyzer.linkedProjects": [ "kernel/Cargo.toml" ],
+  "rust-analyzer.linkedProjects": [ "Cargo.toml", "kernel/Cargo.toml" ],
   "rust-analyzer.check.overrideCommand": [
     "cargo",
     "clippy",
