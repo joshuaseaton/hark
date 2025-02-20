@@ -22,7 +22,7 @@ global_asm!(
     stack_size = const STACK_SIZE,
 );
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[naked]
 extern "C" fn _start() {
     unsafe {

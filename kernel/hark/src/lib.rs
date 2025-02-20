@@ -11,12 +11,12 @@ mod arch;
 
 use core::panic::PanicInfo;
 
-extern "Rust" {
+unsafe extern "Rust" {
     fn hark_app_main();
 }
 
 // Jumped to from _start after initialization.
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn hark_main() {
     unsafe { hark_app_main() };
 }
