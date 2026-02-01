@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT
 
 #![no_std]
-#![feature(naked_functions)]
 
 mod arch;
 
