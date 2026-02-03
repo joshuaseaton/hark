@@ -17,15 +17,13 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 
-[lib]
-crate-type = [ "rlib" ]
-
-[features]
-# Whether hark is expected to be booted in machine mode on RISC-V targets.
-riscv_m_mode = []
+[build-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [dependencies]
-cpuarch = { path = "../../lib/cpuarch" }
+cpuarch = { path = "../lib/cpuarch" }
 
 [lints]
 workspace = true
+

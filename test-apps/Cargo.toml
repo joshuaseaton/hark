@@ -5,12 +5,16 @@
 # https://opensource.org/licenses/MIT
 
 [package]
-name = "hello-world"
+name = "test-apps"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "hello-world"
+path = "hello-world.rs"
+
 [dependencies]
-hark = { path = "../../hark" }
+hark = { path = "../hark" }
 
 [lints]
 workspace = true

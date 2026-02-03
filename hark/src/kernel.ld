@@ -6,13 +6,10 @@
  *  https://opensource.org/licenses/MIT
  */
 
-/* */
-#include "platform.ld.inc"
-
 ENTRY(_start)
 
 SECTIONS {
-  . = MEMBASE + KERNEL_LOAD_OFFSET;
+  . = LOAD_ADDRESS;
 
   .text : {
     /* Keep _start first for use as a raw binary image */

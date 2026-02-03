@@ -5,6 +5,8 @@
 // https://opensource.org/licenses/MIT
 
 use core::arch::{global_asm, naked_asm};
+
+#[cfg(not(riscv_m_mode))]
 use cpuarch::riscv::Sstatus;
 
 const STACK_SIZE: u64 = 0x1000; // 4KiB
@@ -38,7 +40,9 @@ extern "C" fn _start() {
 
         // Clear the gp register in case anything tries to use it.
         mv gp, zero
-
+        "#,
+        #[cfg(not(riscv_m_mode))]
+        r#"
         // Mask all interrupts in case the bootloader left them on.
         csrc sstatus, {sstatus_sie}
         csrw sie, zero
@@ -52,13 +56,15 @@ extern "C" fn _start() {
         // Disable the MMU just in case it was left on (it should not have
         // been).
         csrw satp, zero
-
+        "#,
+        r#"
         // Clear .bss. The linker script ensures that the start and end are
         // both 8-byte aligned.
         lla t0, __bss_start
         lla t1, __bss_end
         0:
-        sd zero, (t0)
+        sw zero, 0(t0)
+        sw zero, 4(t0)
         add t0, t0, 8
         blt t0, t1, 0b
 
@@ -67,5 +73,6 @@ extern "C" fn _start() {
 
         call hark_main
         "#,
+        #[cfg(not(riscv_m_mode))]
         sstatus_sie = const Sstatus::SIE_BIT)
 }

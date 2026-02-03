@@ -1,0 +1,21 @@
+# Copyright (c) 2026 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+include = [ { path = "board.toml", optional = true } ]
+
+[env]
+# Optional. Define an options.json for specifying kernel or board options.
+HARK_OPTIONS = { value = ".cargo/options.json", relative = true }
+
+[unstable]
+build-std = [ "core" ]
+
+[target.'cfg(target_os = "none")']
+rustflags = [
+    # The kernel build script makes the appropriate "kernel.ld" as a relative
+    # path available to links for apps.
+    "-Clink-arg=-Tkernel.ld"
+]

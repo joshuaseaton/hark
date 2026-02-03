@@ -1,3 +1,4 @@
+.cargo/board.toml
+.cargo/options.json
 Cargo.lock
-kernel/Cargo.lock
 target
