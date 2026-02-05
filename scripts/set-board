@@ -7,11 +7,26 @@
 # https://opensource.org/licenses/MIT
 
 # Sets config.toml for a given board.
-def main [board: string] {
+def main [
+    board?: string  # The board name to set (omit to list the available boards)
+] {
     cd $env.FILE_PWD
     cd ..
 
-    let target_json = [hark board $"($board).json"] | path join
+    let board_dir = [hark board] | path join
+    if ($board == null) {
+        print "Available boards:"
+        ls $board_dir
+            | get name
+            | path basename
+            | where ($it | str ends-with ".json")
+            | path parse
+            | get stem
+            | each { |board| print $"* ($board)" }
+        return
+    }
+
+    let target_json = [$board_dir $"($board).json"] | path join
     if not ($target_json | path exists) {
         error make --unspanned $"no target JSON defined for ($board) at ($target_json)"
     }

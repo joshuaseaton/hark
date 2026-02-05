@@ -7,6 +7,7 @@
 use serde::Deserialize;
 use std::env;
 use std::fmt::Display;
+use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -48,6 +49,27 @@ fn set_cfg_pair(key: &str, value: impl Display, value_predicate: &str) {
     println!("cargo::rustc-check-cfg=cfg({key}, values({value_predicate}))");
 }
 
+#[derive(Deserialize)]
+struct CargoMetadata {
+    target_directory: String,
+}
+
+fn final_artifact_dir() -> PathBuf {
+    let target = env::var("TARGET").unwrap();
+    let profile = env::var("PROFILE").unwrap();
+    let metadata_stdout = Command::new("cargo")
+        .arg("metadata")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap()
+        .stdout
+        .unwrap();
+    let metadata: CargoMetadata = serde_json::from_reader(metadata_stdout).unwrap();
+    PathBuf::from(metadata.target_directory)
+        .join(target)
+        .join(profile)
+}
+
 fn main() {
     let board_dir = PathBuf::from("board");
     let board_pkl = if let Ok(board) = env::var("HARK_BOARD") {
@@ -75,16 +97,26 @@ fn main() {
         pkl_args.push(format!("options={options}"));
     }
 
-    let pkl_eval_stdout = Command::new("pkl")
-        .args(pkl_args)
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap()
-        .stdout
+    // We write out the evaluated board specification to the final artifact
+    // directory for easy inspection and programmatic access later on.
+    let spec_json = final_artifact_dir().join("spec.json");
+    let spec_json_file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .read(true)
+        .write(true)
+        .open(&spec_json)
         .unwrap();
-    let spec: Spec = serde_json::from_reader(pkl_eval_stdout).unwrap();
+    Command::new("pkl")
+        .args(pkl_args)
+        .stdout(Stdio::from(spec_json_file))
+        .output()
+        .unwrap();
 
-    //
+    // Now we read it back in to parameterize the build.
+    let spec_json_file = File::open(spec_json).unwrap();
+    let spec: Spec = serde_json::from_reader(spec_json_file).unwrap();
+
     set_cfg_pair("platform", spec.platform.replace('-', "_"), "any()");
     match &spec.arch {
         Arch::Riscv(riscv) => {

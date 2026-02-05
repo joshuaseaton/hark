@@ -1,0 +1,47 @@
+#!/usr/bin/env nu
+
+# Copyright (c) 2026 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+# If a QEMU board is set, this will build the example Hark system and run it
+# under the appropriate QEMU configuration.
+def main [] {
+    cd $env.FILE_PWD
+    cd ..
+
+    let board_toml = [ .cargo board.toml ] | path join
+    if not ($board_toml | path exists) {
+        error make --unspanned "Run `cargo set-board` first"
+    }
+    let board = open $board_toml | get env.HARK_BOARD
+    let qemu = match $board {
+        "qemu-virt-riscv32" => "qemu-system-riscv32"
+        "qemu-virt-riscv64" => "qemu-system-riscv64"
+        _ => { error make --unspanned $"($board) is not a QEMU board" }
+    }
+
+    let system = ^cargo build --message-format=json
+        | lines
+        | each { from json }
+        | where executable? != null
+        | get 0.executable
+        | path relative-to $env.PWD
+
+    mut command = [$qemu -machine virt -nographic -kernel $system]
+
+    # Hark's build script will have written out the evaluation of the board spec
+    # to the top-level artifact directory.
+    let spec = [target $board debug spec.json] | path join | open
+    match ($spec | get arch.name) {
+        "riscv" => {
+            if ($spec | get arch.mMode) {
+                $command ++= [-bios none]
+            }
+        }
+    }
+
+    run-external $command.0 ...($command | skip 1)
+}
