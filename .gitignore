@@ -1,4 +1,5 @@
 .cargo/board.toml
 .cargo/options.json
+.claude
 Cargo.lock
 target

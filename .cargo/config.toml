@@ -12,10 +12,3 @@ HARK_OPTIONS = { value = ".cargo/options.json", relative = true }
 
 [unstable]
 build-std = [ "core" ]
-
-[target.'cfg(target_os = "none")']
-rustflags = [
-    # The kernel build script makes the appropriate "kernel.ld" as a relative
-    # path available to links for apps.
-    "-Clink-arg=-Tkernel.ld"
-]

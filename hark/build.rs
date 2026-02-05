@@ -7,7 +7,6 @@
 use serde::Deserialize;
 use std::env;
 use std::fmt::Display;
-use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -93,25 +92,12 @@ fn main() {
         }
     }
 
-    let linker_script_template = PathBuf::from("src").join("kernel.ld");
-    declare_input(linker_script_template.display());
+    let linker_script = env::current_dir().unwrap().join("src").join("kernel.ld");
+    declare_input(linker_script.display());
 
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let linker_script = out_dir.join("kernel.ld");
-    Command::new("cc") // System cc is fine for the preprocessor.
-        .args([
-            "--preprocess",
-            "--no-line-commands",
-            "--language=c",
-            "-nostdinc", // Don't search the standard include paths
-            "-undef",    // Undefine all predefined macros
-            "-D",
-            format!("LOAD_ADDRESS={:#x}", spec.load_address).as_str(),
-            linker_script_template.to_str().unwrap(),
-        ])
-        .stdout(File::create(linker_script).unwrap())
-        .output()
-        .expect("failed to preprocess linker script");
-
-    println!("cargo::rustc-link-search={}", out_dir.display());
+    let link_args = [
+        format!("-T{}", linker_script.display()),
+        format!("--defsym=LOAD_ADDRESS={:#x}", spec.load_address),
+    ];
+    hark_build::emit_metadata_for_system(&link_args);
 }

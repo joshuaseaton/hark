@@ -5,16 +5,19 @@
 # https://opensource.org/licenses/MIT
 
 [package]
-name = "test-apps"
-version = "0.1.0"
-edition = "2021"
+name = "example"
+edition.workspace = true
+publish = false
 
 [[bin]]
-name = "hello-world"
-path = "hello-world.rs"
+name = "example"
 
 [dependencies]
 hark = { path = "../hark" }
 
+[build-dependencies]
+hark-build = { path = "../hark-build" }
+
 [lints]
 workspace = true
+
