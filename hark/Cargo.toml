@@ -26,7 +26,7 @@ serde_json = "1.0"
 
 [dependencies]
 cfg-if = "1.0"
-cpuarch = { path = "../lib/cpuarch" }
+libarch = { path = "../lib/libarch" }
 
 [lints]
 workspace = true

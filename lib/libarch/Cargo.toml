@@ -5,9 +5,17 @@
 # https://opensource.org/licenses/MIT
 
 [package]
-name = "cpuarch"
+name = "libarch"
 version.workspace = true
 edition.workspace = true
+
+categories = [ "hardware-support", "no-std", "os" ]
+keywords = [ "arch", "cpu" ]
+description = "API for low-level machine access and related type abstractions"
+
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
 
 [dependencies]
 bitfld = "0.2"
