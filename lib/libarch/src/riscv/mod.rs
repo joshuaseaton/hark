@@ -4,6 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
+mod sbi;
+pub use sbi::*;
+
+#[doc(inline)]
+#[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))]
+pub use crate::sbi_call;
+
 use bitfld::{bitfield_repr, layout};
 
 #[bitfield_repr(u8)]

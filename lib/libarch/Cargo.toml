@@ -19,6 +19,7 @@ repository.workspace = true
 
 [dependencies]
 bitfld = "0.2"
+cfg-if = "1.0"
 zerocopy = { version = "0.8", features = [ "derive" ] }
 
 [lints]

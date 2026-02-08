@@ -6,4 +6,5 @@
 
 #![no_std]
 
+/// riscv32, riscv64
 pub mod riscv;
