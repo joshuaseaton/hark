@@ -117,7 +117,7 @@ fn main() {
     let spec_json_file = File::open(spec_json).unwrap();
     let spec: Spec = serde_json::from_reader(spec_json_file).unwrap();
 
-    set_cfg_pair("platform", spec.platform.replace('-', "_"), "any()");
+    set_cfg_pair("platform", spec.platform, "any()");
     match &spec.arch {
         Arch::Riscv(riscv) => {
             set_cfg_name("riscv_m_mode", riscv.m_mode);

@@ -12,3 +12,4 @@ HARK_OPTIONS = { value = ".cargo/options.json", relative = true }
 
 [unstable]
 build-std = [ "core" ]
+build-std-features = [ "compiler-builtins-mem" ]

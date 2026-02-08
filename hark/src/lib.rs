@@ -6,18 +6,21 @@
 
 #![no_std]
 
-mod arch;
+pub mod arch;
+mod dev;
+pub mod platform;
 
 use core::panic::PanicInfo;
 
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
-    // TODO: Do more.
-    loop {}
+    // Nothing more yet to do.
+    panic!();
 }
 
 #[panic_handler]
 pub fn panic(_info: &PanicInfo) -> ! {
-    loop {}
+    // Nothing more yet to do.
+    platform::halt()
 }
