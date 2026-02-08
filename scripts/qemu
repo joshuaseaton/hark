@@ -23,7 +23,16 @@ def main [] {
         _ => { error make --unspanned $"($board) is not a QEMU board" }
     }
 
-    let system = ^cargo build --message-format=json
+    # `cargo build` can give structured output for finding where the kernel is.
+    #
+    # Build failures are hard to parse in structured output though, so we build
+    # first in a way that will surface any errors as usual. And then we can
+    # (silently) rebuild and be sure that the information we want is present in
+    # the JSON.
+    do --capture-errors { ^cargo build }
+    let system = ^cargo build --message-format=json-diagnostic-short
+        | complete
+        | get stdout
         | lines
         | each { from json }
         | where executable? != null
