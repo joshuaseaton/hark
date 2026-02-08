@@ -10,7 +10,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-bitfld = "0.1"
+bitfld = "0.2"
 zerocopy = { version = "0.8", features = [ "derive" ] }
 
 [lints]
