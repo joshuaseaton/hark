@@ -10,17 +10,72 @@ pub mod arch;
 mod dev;
 pub mod platform;
 
+use core::fmt::{self, Write as _};
 use core::panic::PanicInfo;
+use core::write;
+
+const HARK_WELCOME: &str = r"
+▄▄  ▄▄ 
+██  ██             ▄▄
+██▄▄██  ▀▀█▄ ▄███▄ ██ ▄█▀
+██▀▀██ ▄█▀██ ██ ▀▀ ████ 
+██  ██ ▀█▄██ ██    ██ ▀█▄
+";
+
+const HARK_GOODBYE: &str = r"
+ ▄▄▄▄                          ▄▄
+██▀▀██                       ▄█▀▀█▄
+██      ▀▀█▄ ███▄███▄ ▄█▀█▄  ██. ██ ██ ██ ▄█▀█▄ ▄███▄
+██ ▀██ ▄█▀██ ██ ██ ██ ██▄█▀  ██  ██ ██▄██ ██▄█▀ ██ ▀▀
+▀████▀ ▀█▄██ ██ ██ ██ ▀█▄▄▄   ▀██▀   ▀█▀  ▀█▄▄▄ ██
+";
+
+/// A conventional "stdout", backed by the platform console.
+pub struct Stdout {}
+
+impl fmt::Write for Stdout {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        platform::console_write(s.as_bytes());
+        Ok(())
+    }
+}
+
+/// Prints to the platform console.
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        write!($crate::Stdout {}, $($arg)*).unwrap();
+    };
+}
+
+/// Prints to the platform console, with a newline.
+#[macro_export]
+macro_rules! println {
+    ($($arg:tt)*) => {
+        print!($($arg)*);
+        print!("\n");
+    };
+}
 
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
+    println!("{HARK_WELCOME}");
+    println!(
+        "Version: {} ({})",
+        env!("HARK_VERSION"),
+        env!("HARK_REVISION")
+    );
+
     // Nothing more yet to do.
-    panic!();
+    panic!("this panic was intentional");
 }
 
 #[panic_handler]
-pub fn panic(_info: &PanicInfo) -> ! {
+pub fn panic(info: &PanicInfo) -> ! {
+    println!("{HARK_GOODBYE}");
+    println!("{info}");
+
     // Nothing more yet to do.
     platform::halt()
 }

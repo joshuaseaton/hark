@@ -21,3 +21,5 @@ repository = "https://github.com/joshuaseaton/hark"
 all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
 empty_loop = "allow"
+must_use_candidate = "allow"
+too_many_arguments = "allow"

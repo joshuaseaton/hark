@@ -49,6 +49,10 @@ fn set_cfg_pair(key: &str, value: impl Display, value_predicate: &str) {
     println!("cargo::rustc-check-cfg=cfg({key}, values({value_predicate}))");
 }
 
+fn set_env(key: &str, value: &str) {
+    println!("cargo::rustc-env={key}={value}");
+}
+
 #[derive(Deserialize)]
 struct CargoMetadata {
     target_directory: String,
@@ -132,4 +136,23 @@ fn main() {
         format!("--defsym=LOAD_ADDRESS={:#x}", spec.load_address),
     ];
     hark_build::emit_metadata_for_system(&link_args);
+
+    set_env("HARK_VERSION", env!("CARGO_PKG_VERSION"));
+
+    let revision: String = Command::new("git")
+        .args([
+            "describe",
+            "--always",
+            "--dirty",
+            "--abbrev=40",
+            "--match=\"\"",
+        ])
+        .stdout(Stdio::piped())
+        .output()
+        .unwrap()
+        .stdout
+        .try_into()
+        .unwrap();
+    assert!(!revision.is_empty());
+    set_env("HARK_REVISION", &revision);
 }

@@ -15,6 +15,7 @@ trait Platform {
     fn shutdown() -> !;
     fn halt() -> !;
     fn reboot() -> !;
+    fn console_write(bytes: &[u8]);
 }
 
 /// Shuts down the system in an orderly manner.
@@ -30,4 +31,9 @@ pub fn halt() -> ! {
 /// Reboots the system.
 pub fn reboot() -> ! {
     Impl::reboot()
+}
+
+/// Writes to the platform-defined console.
+pub fn console_write(bytes: &[u8]) {
+    Impl::console_write(bytes);
 }

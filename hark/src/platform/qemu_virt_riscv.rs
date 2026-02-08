@@ -7,6 +7,8 @@
 use super::Platform;
 use crate::dev::sifive_test;
 
+use libarch::riscv::{SbiError, sbi_debug_console_write};
+
 pub(super) struct Impl {}
 
 impl Platform for Impl {
@@ -20,5 +22,16 @@ impl Platform for Impl {
 
     fn reboot() -> ! {
         sifive_test::reset();
+    }
+
+    fn console_write(bytes: &[u8]) {
+        let mut remaining = bytes.len();
+        while remaining > 0 {
+            match sbi_debug_console_write(bytes) {
+                Ok(written) => remaining -= written,
+                Err(SbiError::DENIED) => break,
+                _ => {}
+            }
+        }
     }
 }
