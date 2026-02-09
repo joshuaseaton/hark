@@ -57,8 +57,47 @@ impl error::Error for SbiError {}
 impl Deref for SbiError {
     type Target = NonZeroIsize;
 
+    /// Returns the underlying error code.
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+/// Represents an SBI implementation ID.
+pub struct SbiImplementationId(usize);
+
+impl SbiImplementationId {
+    pub const BERKELEY_BOOT_LOADER: usize = 0;
+    pub const OPEN_SBI: usize = 1;
+    pub const XVISOR: usize = 2;
+    pub const KVM: usize = 3;
+    pub const RUST_SBI: usize = 4;
+    pub const DIOSIX: usize = 5;
+    pub const COFFER: usize = 6;
+}
+
+impl Deref for SbiImplementationId {
+    type Target = usize;
+
+    /// Returns the underlying implementation ID value.
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl fmt::Display for SbiImplementationId {
+    /// Gives the name of the implementer if known.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match **self {
+            SbiImplementationId::BERKELEY_BOOT_LOADER => write!(f, "Berkeley Boot Loader (BBL)"),
+            SbiImplementationId::OPEN_SBI => write!(f, "OpenSBI"),
+            SbiImplementationId::XVISOR => write!(f, "Xvisor"),
+            SbiImplementationId::KVM => write!(f, "KVM"),
+            SbiImplementationId::RUST_SBI => write!(f, "Rust SBI"),
+            SbiImplementationId::DIOSIX => write!(f, "Diosix"),
+            SbiImplementationId::COFFER => write!(f, "Coffer"),
+            other => write!(f, "unknown SBI implementation ({other:#x}"),
+        }
     }
 }
 
@@ -162,8 +201,9 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_get_impl_id() -> Result<usize, SbiError> {
-            sbi_call!(EID_BASE_EXTENSION, 1)
+        pub fn sbi_get_impl_id() -> Result<SbiImplementationId, SbiError> {
+            let value = sbi_call!(EID_BASE_EXTENSION, 1)?;
+            Ok(SbiImplementationId(value))
         }
 
         /// Returns the SBI implementation version.
