@@ -25,13 +25,20 @@ impl Platform for Impl {
     }
 
     fn console_write(bytes: &[u8]) {
-        let mut remaining = bytes.len();
-        while remaining > 0 {
-            match sbi_debug_console_write(bytes) {
-                Ok(written) => remaining -= written,
-                Err(SbiError::DENIED) => break,
-                _ => {}
-            }
+        if cfg!(not(riscv_m_mode)) {
+            console_write_sbi(bytes);
+        }
+    }
+}
+
+#[inline]
+fn console_write_sbi(bytes: &[u8]) {
+    let mut remaining = bytes.len();
+    while remaining > 0 {
+        match sbi_debug_console_write(bytes) {
+            Ok(written) => remaining -= written,
+            Err(SbiError::DENIED) => break,
+            _ => {}
         }
     }
 }
