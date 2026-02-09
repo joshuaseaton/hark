@@ -134,6 +134,7 @@ fn main() {
     let link_args = [
         format!("-T{}", linker_script.display()),
         format!("--defsym=LOAD_ADDRESS={:#x}", spec.load_address),
+        "--build-id".to_string(),
     ];
     hark_build::emit_metadata_for_system(&link_args);
 

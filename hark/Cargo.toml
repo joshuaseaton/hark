@@ -26,6 +26,7 @@ serde_json = "1.0"
 
 [dependencies]
 cfg-if = "1.0"
+elf = {version = "0.8", default-features = false }
 libarch = { path = "../lib/libarch" }
 
 [lints]

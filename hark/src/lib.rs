@@ -8,7 +8,10 @@
 
 pub mod arch;
 mod dev;
+pub mod kernel;
 pub mod platform;
+
+use kernel::debug::build_id;
 
 use core::fmt::{self, Write as _};
 use core::panic::PanicInfo;
@@ -66,6 +69,7 @@ extern "C" fn hark_main() {
         env!("HARK_VERSION"),
         env!("HARK_REVISION")
     );
+    print!("Build ID: {}", build_id());
 
     // Nothing more yet to do.
     panic!("this panic was intentional");

@@ -23,6 +23,12 @@ SECTIONS {
   ASSERT(SIZEOF(.eh_frame) == 0, "no .eh_frame should be emitted")
 
   .rodata : { *(.srodata*) *(.rodata*) }
+  .note.gnu.build-id : {
+    __start_note_gnu_build_id = .;
+    *(.note.gnu.build-id)
+    __end_note_gnu_build_id = .;
+  }
+
 
   .data : { *(.data*) *(.sdata*) }
 
