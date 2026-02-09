@@ -111,6 +111,12 @@ layout!({
     }
 });
 
+impl fmt::Display for SbiSpecificationVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}", self.major(), self.minor())
+    }
+}
+
 // A separate helper macro for sbi_call!() internals so that no internal arms
 // are documented by rustdoc.
 #[doc(hidden)]
