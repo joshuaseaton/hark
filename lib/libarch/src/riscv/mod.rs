@@ -7,11 +7,18 @@
 mod sbi;
 pub use sbi::*;
 
-#[doc(inline)]
-#[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))]
-pub use crate::sbi_call;
+use core::{arch::asm, ptr};
 
 use bitfld::{bitfield_repr, layout};
+
+cfg_if::cfg_if! {
+    if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
+        #[doc(inline)]
+        pub use crate::sbi_call;
+
+        use crate::{CallFrame, Arch};
+    }
+}
 
 #[bitfield_repr(u8)]
 pub enum Xlen {
@@ -55,3 +62,31 @@ layout!({
         let _: Bit<0>;
     }
 });
+
+cfg_if::cfg_if! {
+    if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
+        pub(super) struct ArchImpl {}
+
+        impl Arch for ArchImpl {
+
+            #[inline(always)]
+            fn frame_pointer() -> usize {
+                let mut fp: usize;
+                unsafe {
+                    asm!("mv {}, s0", out(reg) fp);
+                }
+                fp
+            }
+
+            fn call_frame(fp: usize) -> CallFrame {
+                unsafe {
+                    let frame: *const usize = ptr::without_provenance(fp);
+                    CallFrame{
+                        frame_pointer: *frame.sub(2),
+                        return_address: *frame.sub(1)
+                    }
+                }
+            }
+        }
+    }
+}
