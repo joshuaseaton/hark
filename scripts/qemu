@@ -52,5 +52,29 @@ def main [] {
         }
     }
 
+    # Set up .build-id directory for llvm-symbolizer --filter-markup.
+    # TODO: Update llvm-symbolizer so that `llvm-symbolizer --obj $system` can
+    # work without a .build-id directory. 
+    let build_id = (^llvm-readelf -n $system
+        | lines
+        | find "Build ID"
+        | get 0
+        | ansi strip
+        | split row ": "
+        | last
+        | str trim)
+    let bid_prefix = ($build_id | str substring 0..<2)
+    let bid_suffix = ($build_id | str substring 2..)
+    let bid_dir = [ target .build-id $bid_prefix ] | path join
+    mkdir $bid_dir
+    ^ln -sf ($system | path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
+
     run-external $command.0 ...($command | skip 1)
+        | (
+            ^llvm-symbolizer
+            --filter-markup
+            --relativenames
+            --color=never
+            --debug-file-directory target/
+        )
 }

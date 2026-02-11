@@ -10,6 +10,8 @@ ENTRY(_start)
 
 SECTIONS {
   . = LOAD_ADDRESS;
+  PROVIDE_HIDDEN(__executable_start = .);
+
 
   .text : {
     /* Keep _start first for use as a raw binary image */
@@ -23,10 +25,12 @@ SECTIONS {
   ASSERT(SIZEOF(.eh_frame) == 0, "no .eh_frame should be emitted")
 
   .rodata : { *(.srodata*) *(.rodata*) }
-  .note.gnu.build-id : {
-    __start_note_gnu_build_id = .;
+
+  /* Force 4-byte alignment for the section to match the GNU Note format */
+  .note.gnu.build-id : ALIGN(4) {
+    __note_gnu_build_id_start = .;
     *(.note.gnu.build-id)
-    __end_note_gnu_build_id = .;
+    __note_gnu_build_id_end = .;
   }
 
 
@@ -44,4 +48,6 @@ SECTIONS {
     . = ALIGN(8);
     PROVIDE_HIDDEN(__bss_end = .);
   }
+  
+  PROVIDE_HIDDEN(_end = .);
 }

@@ -6,6 +6,7 @@
   "eh-frame-header": false,
   "emit-debug-gdb-scripts": false,
   "features": "+m,+a,+f,+d,+c,+zicsr,+zifencei",
+  "frame-pointer": "always",
   "linker": "rust-lld",
   "linker-flavor": "gnu-lld",
   "llvm-abiname": "ilp32f",

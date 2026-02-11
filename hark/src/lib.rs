@@ -11,11 +11,11 @@ mod dev;
 pub mod kernel;
 pub mod platform;
 
-use kernel::debug::build_id;
-
-use core::fmt::{self, Write as _};
+use core::fmt;
 use core::panic::PanicInfo;
 use core::write;
+
+use kernel::debug::{build_id, print_backtrace};
 
 const HARK_WELCOME: &str = r"
 ▄▄  ▄▄ 
@@ -46,30 +46,28 @@ impl fmt::Write for Stdout {
 /// Prints to the platform console.
 #[macro_export]
 macro_rules! print {
-    ($($arg:tt)*) => {
-        write!($crate::Stdout {}, $($arg)*).unwrap();
-    };
+    ($($arg:tt)*) => {{
+        use core::fmt::Write as _;
+        write!($crate::Stdout {}, $($arg)*).unwrap()
+    }};
 }
 
 /// Prints to the platform console, with a newline.
 #[macro_export]
 macro_rules! println {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => {{
         print!($($arg)*);
-        print!("\n");
-    };
+        print!("\n")
+    }};
 }
 
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
-    println!("{HARK_WELCOME}");
-    println!(
-        "Version: {} ({})",
-        env!("HARK_VERSION"),
-        env!("HARK_REVISION")
-    );
-    print!("Build ID: {}", build_id());
+    print_welcome();
+    print_version();
+    kernel::debug::early_init(); // Parses the build ID.
+    print_build_id();
 
     // Nothing more yet to do.
     panic!("this panic was intentional");
@@ -77,9 +75,44 @@ extern "C" fn hark_main() {
 
 #[panic_handler]
 pub fn panic(info: &PanicInfo) -> ! {
-    println!("{HARK_GOODBYE}");
-    println!("{info}");
+    print_goodbye();
+    print_panic_info(info);
+    print_backtrace();
 
     // Nothing more yet to do.
     platform::halt()
+}
+
+//
+// Printing is stack-hungry, so we put these print routines in inline(never)
+// wrappers to avoid stack overflows.
+//
+
+#[inline(never)]
+fn print_welcome() {
+    println!("{HARK_WELCOME}");
+}
+
+#[inline(never)]
+fn print_version() {
+    println!(
+        "Version: {} ({})",
+        env!("HARK_VERSION"),
+        env!("HARK_REVISION")
+    );
+}
+
+#[inline(never)]
+fn print_build_id() {
+    println!("Build ID: {}", build_id());
+}
+
+#[inline(never)]
+fn print_goodbye() {
+    println!("{HARK_GOODBYE}");
+}
+
+#[inline(never)]
+fn print_panic_info(info: &PanicInfo) {
+    println!("{info}");
 }
