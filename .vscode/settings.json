@@ -1,11 +1,12 @@
 {
-  "rust-analyzer.linkedProjects": [
-    "Cargo.toml",
-    "hark-build/Cargo.toml"
-  ],
   "rust-analyzer.check.overrideCommand": [
     "cargo",
     "clippy",
     "--message-format=json"
-  ]
+  ],
+  "rust-analyzer.diagnostics.warningsAsHint": ["dead_code"],
+  "rust-analyzer.linkedProjects": [
+    "Cargo.toml",
+    "hark-build/Cargo.toml"
+  ],
 }

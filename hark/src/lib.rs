@@ -7,13 +7,19 @@
 #![no_std]
 
 pub mod arch;
-mod dev;
 pub mod kernel;
 pub mod platform;
 
+// There is naturally going to be a lot of dead device code in any given
+// configuration, so the lint here would be too noisy. We can at least permit
+// the lint in clippy's analysis and downgrade the warning to a hint with
+// the rust-analyzer.diagnostics.warningsAsHint option. This keeps dead code as
+// greyed out in the editor, but not with squiggles.
+#[cfg_attr(not(clippy), allow(dead_code))]
+pub(crate) mod dev;
+
 use core::fmt;
 use core::panic::PanicInfo;
-use core::write;
 
 use kernel::debug::{build_id, print_backtrace};
 
@@ -64,10 +70,12 @@ macro_rules! println {
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
+    platform::console_init();
     print_welcome();
     print_version();
     kernel::debug::early_init(); // Parses the build ID.
     print_build_id();
+    print_console_info();
 
     // Nothing more yet to do.
     panic!("this panic was intentional");
@@ -105,6 +113,13 @@ fn print_version() {
 #[inline(never)]
 fn print_build_id() {
     println!("Build ID: {}", build_id());
+}
+
+#[inline(never)]
+fn print_console_info() {
+    print!("Console: ");
+    platform::console_describe(&mut Stdout {});
+    print!("\n");
 }
 
 #[inline(never)]

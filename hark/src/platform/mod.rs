@@ -4,6 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
+pub mod console;
+pub(crate) use console::*;
+
+use core::fmt;
+
 cfg_if::cfg_if! {
     if #[cfg(platform = "qemu-virt-riscv")] {
         mod qemu_virt_riscv;
@@ -12,10 +17,25 @@ cfg_if::cfg_if! {
 }
 
 trait Platform {
+    type Console: Console;
+
+    fn console() -> Self::Console;
     fn shutdown() -> !;
     fn halt() -> !;
     fn reboot() -> !;
-    fn console_write(bytes: &[u8]);
+}
+
+pub(crate) fn console_describe(w: &mut impl fmt::Write) {
+    Console::describe(get_console(), w);
+}
+
+pub(crate) fn console_init() {
+    set_console(Impl::console());
+}
+
+/// Writes to the platform-defined console.
+pub fn console_write(bytes: &[u8]) {
+    Console::write(get_console(), bytes);
 }
 
 /// Shuts down the system in an orderly manner.
@@ -31,9 +51,4 @@ pub fn halt() -> ! {
 /// Reboots the system.
 pub fn reboot() -> ! {
     Impl::reboot()
-}
-
-/// Writes to the platform-defined console.
-pub fn console_write(bytes: &[u8]) {
-    Impl::console_write(bytes);
 }
