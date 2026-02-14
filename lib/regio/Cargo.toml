@@ -6,7 +6,7 @@
 
 [package]
 name = "regio"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 
 categories = ["embedded", "hardware-support", "os"]
@@ -18,5 +18,5 @@ readme.workspace = true
 repository.workspace = true
 
 [dependencies]
-regio-macro = "0.1.0"
+regio-macro = { path = "../regio-macro" }
 zerocopy = "0.8"

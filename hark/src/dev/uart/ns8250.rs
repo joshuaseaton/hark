@@ -9,7 +9,7 @@ use core::fmt;
 use core::marker::PhantomData;
 
 use bitfld::{bitfield_repr, layout};
-use regio::{IoBackend, Mmio, Offset, Readable, Register as _, Writable, offset};
+use regio::{IoBackend, Mmio, Offset, Register as _, offset};
 
 use crate::dev::uart::DriverBase;
 
@@ -18,10 +18,10 @@ const FIFO_DEPTH_16550A: usize = 16;
 
 const APERTURE_SIZE: usize = 8;
 
-// When DLAB = 0, a read from the first register yields a received byte.
-// TODO: blocks?
+// When DLAB = 0, a read from the first register yields a received byte (or
+// garbage if no data has been received).
 layout! {{
-    #[offset(0)]
+    #[offset(0, ro)]
     struct RxBufferRegister(u8);
     {
         let data: Bits<7, 0>;
@@ -30,7 +30,7 @@ layout! {{
 
 // When DLAB = 0, a write to the first register transmits the data.
 layout! {{
-    #[offset(0)]
+    #[offset(0, wo)]
     struct TxBufferRegister(u8);
     {
         let data: Bits<7, 0>;
@@ -191,7 +191,7 @@ pub struct State {
     fifo_depth: usize,
 }
 
-pub trait UartIo: IoBackend<Base = u8, Addr = Offset, Mode: Readable + Writable> {
+pub trait UartIo: IoBackend<Base = u8, Addr = Offset> {
     const DESC: &str;
     fn new(addr: usize, size: usize) -> Self;
 }
