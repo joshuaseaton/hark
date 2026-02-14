@@ -1,0 +1,22 @@
+# Copyright (c) 2025 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+[package]
+name = "regio"
+version = "0.1.0"
+edition.workspace = true
+
+categories = ["embedded", "hardware-support", "os"]
+description = "High level abstractions for register access of all sorts"
+keywords = ["register", "IO", "MMIO", "PIO"]
+
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[dependencies]
+regio-macro = "0.1.0"
+zerocopy = "0.8"
