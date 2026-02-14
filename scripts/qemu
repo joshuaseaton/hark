@@ -46,7 +46,7 @@ def main [] {
     let spec = [target $board debug spec.json] | path join | open
     match ($spec | get arch.name) {
         "riscv" => {
-            if ($spec | get arch.mMode) {
+            if ($spec | get arch.entryMode) == "m" {
                 $command ++= [-bios none]
             }
         }

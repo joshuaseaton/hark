@@ -10,7 +10,7 @@ import "pkl:json"
 local const optionsFile = read?("prop:options")
 local const optionsMap =
   if (optionsFile == null)
-    new Map {}
+    Map()
   else
     (new json.Parser {}).parse(read(optionsFile).text).toMap()
 
@@ -23,8 +23,8 @@ class ArchRiscv {
   // Used as a deserialization tag.
   fixed name: String = "riscv"
 
-  // Whether we are booted in M mode.
-  mMode: Boolean
+  // The mode we are booted in: "m" for machine and "s" for supervisor.
+  entryMode: "m" | "s"
 }
 
 //
@@ -42,3 +42,15 @@ arch: ArchRiscv
 
 // The physical address at which the kernel will be loaded.
 loadAddress: UInt
+
+class Options {
+  //
+  // RISC-V-specific options.
+  //
+
+  // Whether to use the SBI debug console as hark's console. Only valid if
+  // entering in supervisor mode.
+  riscvSbiConsole: Boolean = false
+}
+
+options = optionsMap.remove("board").toTyped(Options)

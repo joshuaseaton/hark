@@ -17,6 +17,7 @@ struct Spec {
     platform: String,
     arch: Arch,
     load_address: i64,
+    options: Options,
 }
 
 #[derive(Deserialize)]
@@ -30,7 +31,20 @@ enum Arch {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ArchRiscv {
-    m_mode: bool,
+    entry_mode: RiscvEntryMode,
+}
+
+#[derive(Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum RiscvEntryMode {
+    M,
+    S,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Options {
+    riscv_sbi_console: bool,
 }
 
 fn declare_input(path: impl Display) {
@@ -114,6 +128,7 @@ fn main() {
     Command::new("pkl")
         .args(pkl_args)
         .stdout(Stdio::from(spec_json_file))
+        .stderr(Stdio::inherit())
         .output()
         .unwrap();
 
@@ -124,7 +139,13 @@ fn main() {
     set_cfg_pair("platform", spec.platform, "any()");
     match &spec.arch {
         Arch::Riscv(riscv) => {
-            set_cfg_name("riscv_m_mode", riscv.m_mode);
+            let m_mode = riscv.entry_mode == RiscvEntryMode::M;
+            set_cfg_name("riscv_m_mode", m_mode);
+            assert!(
+                !(spec.options.riscv_sbi_console && m_mode),
+                "No SBI in machine mode, so can't use it for a console"
+            );
+            set_cfg_name("riscv_sbi_console", spec.options.riscv_sbi_console);
         }
     }
 
