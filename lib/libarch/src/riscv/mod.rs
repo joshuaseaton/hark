@@ -16,7 +16,7 @@ cfg_if::cfg_if! {
         #[doc(inline)]
         pub use crate::sbi_call;
 
-        use crate::{CallFrame, Arch};
+        use crate::{CallFrame, ArchCommon};
     }
 }
 
@@ -65,9 +65,9 @@ layout!({
 
 cfg_if::cfg_if! {
     if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
-        pub(super) struct ArchImpl {}
+        pub(super) struct Arch {}
 
-        impl Arch for ArchImpl {
+        impl ArchCommon for Arch {
 
             #[inline(always)]
             fn frame_pointer() -> usize {

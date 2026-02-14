@@ -10,7 +10,7 @@
 pub mod riscv;
 
 #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
-use riscv::ArchImpl;
+use riscv::Arch;
 
 cfg_if::cfg_if! {
     if #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))] {
@@ -18,7 +18,7 @@ cfg_if::cfg_if! {
         // The common architectural interface. Defining the associated freeform
         // functions below in terms of a private implementation of this trait
         // allows us to document the functions in precisely one place.
-        trait Arch {
+        trait ArchCommon {
             fn frame_pointer() -> usize;
             fn call_frame(fp: usize) -> CallFrame;
         }
@@ -29,7 +29,7 @@ cfg_if::cfg_if! {
         /// in the function's own frame).
         #[inline(always)]
         pub fn frame_pointer() -> usize {
-            ArchImpl::frame_pointer()
+            Arch::frame_pointer()
         }
 
         #[derive(Clone, Copy, Debug)]
@@ -49,7 +49,7 @@ cfg_if::cfg_if! {
             /// deeper.)
             #[inline(always)]
             pub fn new() -> Self {
-                Self(Some(ArchImpl::call_frame(frame_pointer())))
+                Self(Some(Arch::call_frame(frame_pointer())))
             }
         }
 
@@ -64,7 +64,7 @@ cfg_if::cfg_if! {
                 if frame_pointer == 0 {
                     *self = Self(None);
                 } else {
-                    *self = Self(Some(ArchImpl::call_frame(frame_pointer)));
+                    *self = Self(Some(Arch::call_frame(frame_pointer)));
                 }
                 Some(return_address)
             }
