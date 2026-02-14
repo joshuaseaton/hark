@@ -77,7 +77,7 @@ extern "C" fn hark_main() {
 pub fn panic(info: &PanicInfo) -> ! {
     print_goodbye();
     print_panic_info(info);
-    print_backtrace();
+    print_backtrace(libarch::frame_pointer());
 
     // Nothing more yet to do.
     platform::halt()

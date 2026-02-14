@@ -42,14 +42,9 @@ cfg_if::cfg_if! {
         pub struct Backtrace(Option<CallFrame>);
 
         impl Backtrace {
-            /// Yields a backtrace beginning in the frame of the caller (except
-            /// in unlikely cases where the compiler opts not to inline this
-            /// function or [`frame_pointer`] - both marked `inline(always)` -
-            /// in which case the backtrace will begin one or two frames
-            /// deeper.)
-            #[inline(always)]
-            pub fn new() -> Self {
-                Self(Some(Arch::call_frame(frame_pointer())))
+            /// Yields a backtrace beginning in the provided frame.
+            pub fn new(fp: usize) -> Self {
+                Self(Some(Arch::call_frame(fp)))
             }
         }
 
