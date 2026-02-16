@@ -9,7 +9,7 @@ use core::{fmt, ops, ptr};
 use libarch::Backtrace;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
 
-use crate::{print, println};
+use crate::println;
 
 unsafe extern "C" {
     static __executable_start: u8;

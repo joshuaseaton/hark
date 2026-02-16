@@ -62,8 +62,8 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => {{
-        print!($($arg)*);
-        print!("\n")
+        $crate::print!($($arg)*);
+        $crate::print!("\n")
     }};
 }
 
@@ -75,6 +75,7 @@ extern "C" fn hark_main() {
     print_version();
     kernel::debug::early_init(); // Parses the build ID.
     print_build_id();
+    arch::print_machine_context();
     print_console_info();
 
     // Nothing more yet to do.
