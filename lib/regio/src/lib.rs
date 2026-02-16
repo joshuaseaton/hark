@@ -5,13 +5,34 @@
 // https://opensource.org/licenses/MIT
 #![no_std]
 
+pub mod riscv;
+
 use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;
 
 use zerocopy::{FromBytes, IntoBytes};
 
-#[doc(inline)]
+/// Associates a type as being a register addressed at a fixed offset.
+///
+/// Requires that the type implements `core::ops::Deref`. Implements
+/// `regio::Spec` with
+///   * `Base = <Self as core::ops::Deref>::Target`
+///   * `Addr = regio::Offset`;
+///   * and `Access` as given by the second parameter, defaulting to
+///     `regio::ReadWrite`
+///
+/// ## Parameters
+///
+/// Comma-separated and positional:
+///
+///   - *Required:* the register offset as a `usize` expression.
+///     <br><br>
+///   - *Optional:* one of `ro`, `rw`, or `wo`, corresponding to
+///     `regio::{ReadOnly, ReadWrite, WriteOnly}`, respectively.
+///
+///     *Default:* `rw`
+///
 pub use regio_macro::offset;
 
 /// An abstract means of register access.

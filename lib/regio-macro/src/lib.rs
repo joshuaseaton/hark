@@ -4,32 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
+mod riscv;
+
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{ToTokens, quote};
 use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::{DeriveInput, Expr, Ident, Token, parse_macro_input};
 
-/// Associates a type as being a register addressed at a fixed offset.
-///
-/// Requires that the type implements `core::ops::Deref`. Implements
-/// `regio::Spec` with
-///   * `Base = <Self as core::ops::Deref>::Target`
-///   * `Addr = regio::Offset`;
-///   * and `Access` as given by the second parameter, defaulting to
-///     `regio::ReadWrite`
-///
-/// ## Parameters
-///
-/// Comma-separated and positional:
-///
-///   - *Required:* the register offset as a `usize` expression.
-///     <br><br>
-///   - *Optional:* one of `ro`, `rw`, or `wo`, corresponding to
-///     `regio::{ReadOnly, ReadWrite, WriteOnly}`, respectively.
-///
-///     *Default:* `rw`
-///
 #[proc_macro_attribute]
 pub fn offset(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
@@ -49,6 +31,13 @@ pub fn offset(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
     .into()
+}
+
+#[proc_macro_attribute]
+pub fn riscv_csr(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let attrs = parse_macro_input!(attr as riscv::CsrAttrs);
+    let input = parse_macro_input!(item as DeriveInput);
+    attrs.expand(input).into()
 }
 
 struct OffsetAttrs {
