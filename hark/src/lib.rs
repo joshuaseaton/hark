@@ -73,10 +73,13 @@ extern "C" fn hark_main() {
     platform::console_init();
     print_welcome();
     print_version();
-    kernel::debug::early_init(); // Parses the build ID.
+
+    // Parses the build ID. Do it early for symbolizable backtraces.
+    kernel::debug::early_init();
     print_build_id();
-    arch::print_machine_context();
+
     print_console_info();
+    arch::print_machine_context();
 
     // Nothing more yet to do.
     panic!("this panic was intentional");
