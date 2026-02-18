@@ -19,9 +19,8 @@ pub mod platform;
 pub(crate) mod dev;
 
 use core::fmt;
-use core::panic::PanicInfo;
 
-use kernel::debug::{build_id, print_backtrace};
+use kernel::debug::build_id;
 
 const HARK_WELCOME: &str = r"
 ▄▄  ▄▄ 
@@ -29,14 +28,6 @@ const HARK_WELCOME: &str = r"
 ██▄▄██  ▀▀█▄ ▄███▄ ██ ▄█▀
 ██▀▀██ ▄█▀██ ██ ▀▀ ████ 
 ██  ██ ▀█▄██ ██    ██ ▀█▄
-";
-
-const HARK_GOODBYE: &str = r"
- ▄▄▄▄                          ▄▄
-██▀▀██                       ▄█▀▀█▄
-██      ▀▀█▄ ███▄███▄ ▄█▀█▄  ██. ██ ██ ██ ▄█▀█▄ ▄███▄
-██ ▀██ ▄█▀██ ██ ██ ██ ██▄█▀  ██  ██ ██▄██ ██▄█▀ ██ ▀▀
-▀████▀ ▀█▄██ ██ ██ ██ ▀█▄▄▄   ▀██▀   ▀█▀  ▀█▄▄▄ ██
 ";
 
 /// A conventional "stdout", backed by the platform console.
@@ -79,25 +70,16 @@ extern "C" fn hark_main() {
     print_build_id();
 
     print_console_info();
+
     arch::print_machine_context();
 
     // Nothing more yet to do.
     panic!("this panic was intentional");
 }
 
-#[panic_handler]
-pub fn panic(info: &PanicInfo) -> ! {
-    print_goodbye();
-    print_panic_info(info);
-    print_backtrace(libarch::frame_pointer());
-
-    // Nothing more yet to do.
-    platform::halt()
-}
-
 //
 // Printing is stack-hungry, so we put these print routines in inline(never)
-// wrappers to avoid stack overflows.
+// wrappers to avoid overflows.
 //
 
 #[inline(never)]
@@ -124,14 +106,4 @@ fn print_console_info() {
     print!("Console: ");
     platform::console_describe(&mut Stdout {});
     print!("\n");
-}
-
-#[inline(never)]
-fn print_goodbye() {
-    println!("{HARK_GOODBYE}");
-}
-
-#[inline(never)]
-fn print_panic_info(info: &PanicInfo) {
-    println!("{info}");
 }
