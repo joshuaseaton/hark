@@ -44,7 +44,11 @@ cfg_if::cfg_if! {
         impl Backtrace {
             /// Yields a backtrace beginning in the provided frame.
             pub fn new(fp: usize) -> Self {
-                Self(Some(Arch::call_frame(fp)))
+                if fp == 0 {
+                    Self(None)
+                } else {
+                    Self(Some(Arch::call_frame(fp)))
+                }
             }
         }
 
@@ -56,12 +60,12 @@ cfg_if::cfg_if! {
                     frame_pointer,
                     return_address,
                 } = self.0?;
-                if frame_pointer == 0 {
-                    *self = Self(None);
+                *self = if frame_pointer == 0 {
+                    Self(None)
                 } else {
-                    *self = Self(Some(Arch::call_frame(frame_pointer)));
-                }
-                Some(return_address)
+                    Self(Some(Arch::call_frame(frame_pointer)))
+                };
+                (return_address != 0).then_some(return_address)
             }
         }
     }

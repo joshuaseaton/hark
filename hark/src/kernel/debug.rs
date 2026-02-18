@@ -158,5 +158,5 @@ fn print_mmap_element() {
 
 #[inline(never)]
 fn print_bt_element(index: usize, return_address: usize) {
-    println!("{{{{{{bt:{index}:{:#x}:ra}}}}}}", return_address - 1);
+    println!("{{{{{{bt:{index}:{:#x}:ra}}}}}}", return_address);
 }
