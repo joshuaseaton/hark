@@ -37,6 +37,9 @@ impl CsrAttrs {
         let io = format_ident!("{type_name}Io");
         let csrr = LitStr::new(&format!("csrr {{}}, {csr}"), csr.span());
         let csrw = LitStr::new(&format!("csrw {csr}, {{}}"), csr.span());
+        let csrrw = LitStr::new(&format!("csrrw {{}}, {csr}, {{}}"), csr.span());
+        let csrrs = LitStr::new(&format!("csrrs {{}}, {csr}, {{}}"), csr.span());
+        let csrrc = LitStr::new(&format!("csrrc {{}}, {csr}, {{}}"), csr.span());
 
         let io_doc = match access {
             AccessMode::ReadOnly => format!("Reads `{csr}`."),
@@ -68,7 +71,7 @@ impl CsrAttrs {
             #[derive(Default)]
             #vis struct #io;
 
-            #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+            #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))]
             impl ::regio::IoBackend for #io {
                 type Base = <#type_name as ::core::ops::Deref>::Target;
                 type Addr = ();
@@ -95,6 +98,47 @@ impl CsrAttrs {
                             options(nomem, nostack, preserves_flags),
                         )
                     }
+                }
+            }
+
+            impl ::regio::AtomicIoBackend for #io {
+                fn atomic_swap_at(&self, value: Self::Base, _: ()) -> Self::Base {
+                    let initial: Self::Base;
+                    unsafe {
+                        ::core::arch::asm!(
+                            #csrrw,
+                            out(reg) initial,
+                            in(reg) value,
+                            options(nomem, nostack, preserves_flags),
+                        )
+                    }
+                    initial
+                }
+
+                fn atomic_set_bits_at(&self, value: Self::Base, _: ()) -> Self::Base {
+                    let initial: Self::Base;
+                    unsafe {
+                        ::core::arch::asm!(
+                            #csrrs,
+                            out(reg) initial,
+                            in(reg) value,
+                            options(nomem, nostack, preserves_flags),
+                        )
+                    }
+                    initial
+                }
+
+                fn atomic_clear_bits_at(&self, value: Self::Base, _: ()) -> Self::Base {
+                    let initial: Self::Base;
+                    unsafe {
+                        ::core::arch::asm!(
+                            #csrrc,
+                            out(reg) initial,
+                            in(reg) value,
+                            options(nomem, nostack, preserves_flags),
+                        )
+                    }
+                    initial
                 }
             }
         }

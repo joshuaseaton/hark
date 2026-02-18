@@ -49,6 +49,20 @@ pub trait IoBackend {
     fn write_at(&self, value: Self::Base, addr: Self::Addr);
 }
 
+/// An [`IoBackend`] extension supporting atomic read-modify-write operations.
+pub trait AtomicIoBackend: IoBackend {
+    /// Atomically swap the value at the given address, returning the original.
+    fn atomic_swap_at(&self, value: Self::Base, addr: Self::Addr) -> Self::Base;
+
+    /// Atomically set the indicated bits at the given address, returning the
+    /// original value.
+    fn atomic_set_bits_at(&self, bits: Self::Base, addr: Self::Addr) -> Self::Base;
+
+    /// Atomically clear the indicated bits at the given address, returning the
+    /// original value.
+    fn atomic_clear_bits_at(&self, bits: Self::Base, addr: Self::Addr) -> Self::Base;
+}
+
 /// A marker trait for registers permitting reads.
 pub trait Readable {}
 
@@ -226,6 +240,156 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         let mut value = Self::read();
         mutate(&mut value);
         value.write()
+    }
+
+    /// Only enabled if the register is readable and writable with an unfixed
+    /// address, this method atomically swaps the current register value with a
+    /// new one on any compatible atomic I/O backend at a given address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_swap_with_at<Io>(value: Self, io: &Io, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Writable + UnfixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr> + AtomicIoBackend,
+    {
+        Self::from(io.atomic_swap_at(*value, addr))
+    }
+
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address, this method atomically swaps the current register value with a
+    /// new one on any compatible atomic I/O backend at its associated address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_swap_with<Io>(value: Self, io: &Io) -> Self
+    where
+        Self: Readable + Writable + FixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr> + AtomicIoBackend,
+    {
+        Self::from(io.atomic_swap_at(*value, Self::ADDR))
+    }
+
+    /// Only enabled if the register is readable and writable with an unfixed
+    /// address and a default atomic I/O backend, this method atomically swaps
+    /// the current register value with a new one at a given address, returning
+    /// the original value.
+    #[inline]
+    fn atomic_swap_at(value: Self, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Writable + UnfixedAddr + DefaultIo<Io: AtomicIoBackend>,
+    {
+        Self::from(Self::Io::default().atomic_swap_at(*value, addr))
+    }
+
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address and a default atomic I/O backend, this method atomically swaps
+    /// the current register value with a new one at its associated address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_swap(value: Self) -> Self
+    where
+        Self: Readable + Writable + FixedAddr + DefaultIo<Io: AtomicIoBackend>,
+    {
+        Self::from(Self::Io::default().atomic_swap_at(*value, Self::ADDR))
+    }
+
+    /// Only enabled if the register is readable and writable with an unfixed
+    /// address, this method atomically sets the indicated bits in the current
+    /// register value on any compatible atomic I/O backend at a given address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_set_bits_with_at<Io>(bits: Self, io: &Io, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Writable + UnfixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr> + AtomicIoBackend,
+    {
+        Self::from(io.atomic_set_bits_at(*bits, addr))
+    }
+
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address, this method atomically sets the indicated bits in the current
+    /// register value on any compatible atomic I/O backend at its associated
+    /// address, returning the original value.
+    #[inline]
+    fn atomic_set_bits_with<Io>(bits: Self, io: &Io) -> Self
+    where
+        Self: Readable + Writable + FixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr> + AtomicIoBackend,
+    {
+        Self::from(io.atomic_set_bits_at(*bits, Self::ADDR))
+    }
+
+    /// Only enabled if the register is readable and writable with an unfixed
+    /// address and a default atomic I/O backend, this method atomically sets
+    /// the indicated bits in the current register value at a given address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_set_bits_at(bits: Self, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Writable + UnfixedAddr + DefaultIo<Io: AtomicIoBackend>,
+    {
+        Self::from(Self::Io::default().atomic_set_bits_at(*bits, addr))
+    }
+
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address and a default atomic I/O backend, this method atomically sets
+    /// the indicated bits in the current register value at its associated
+    /// address, returning the original value.
+    #[inline]
+    fn atomic_set_bits(bits: Self) -> Self
+    where
+        Self: Readable + Writable + FixedAddr + DefaultIo<Io: AtomicIoBackend>,
+    {
+        Self::from(Self::Io::default().atomic_set_bits_at(*bits, Self::ADDR))
+    }
+
+    /// Only enabled if the register is readable and writable with an unfixed
+    /// address, this method atomically clears the indicated bits in the current
+    /// register value on any compatible atomic I/O backend at a given address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_clear_bits_with_at<Io>(bits: Self, io: &Io, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Writable + UnfixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr> + AtomicIoBackend,
+    {
+        Self::from(io.atomic_clear_bits_at(*bits, addr))
+    }
+
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address, this method atomically clears the indicated bits in the current
+    /// register value on any compatible atomic I/O backend at its associated
+    /// address, returning the original value.
+    #[inline]
+    fn atomic_clear_bits_with<Io>(bits: Self, io: &Io) -> Self
+    where
+        Self: Readable + Writable + FixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr> + AtomicIoBackend,
+    {
+        Self::from(io.atomic_clear_bits_at(*bits, Self::ADDR))
+    }
+
+    /// Only enabled if the register is readable and writable with an unfixed
+    /// address and a default atomic I/O backend, this method atomically clears
+    /// the indicated bits in the current register value at a given address,
+    /// returning the original value.
+    #[inline]
+    fn atomic_clear_bits_at(bits: Self, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Writable + UnfixedAddr + DefaultIo<Io: AtomicIoBackend>,
+    {
+        Self::from(Self::Io::default().atomic_clear_bits_at(*bits, addr))
+    }
+
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address and a default atomic I/O backend, this method atomically clears
+    /// the indicated bits in the current register value at its associated
+    /// address, returning the original value.
+    #[inline]
+    fn atomic_clear_bits(bits: Self) -> Self
+    where
+        Self: Readable + Writable + FixedAddr + DefaultIo<Io: AtomicIoBackend>,
+    {
+        Self::from(Self::Io::default().atomic_clear_bits_at(*bits, Self::ADDR))
     }
 }
 
