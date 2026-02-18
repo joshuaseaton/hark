@@ -11,6 +11,10 @@ use libarch::riscv::Sstatus;
 
 const STACK_SIZE: u64 = 0x2000; // 8KiB
 
+#[cfg(not(riscv_m_mode))]
+#[unsafe(no_mangle)]
+pub(crate) static BOOT_HART_ID: usize = 0;
+
 // TODO: Define this via a more generic asm object macro?
 global_asm!(
     r#"
@@ -56,25 +60,29 @@ extern "C" fn _start() {
         // Disable the MMU just in case it was left on (it should not have
         // been).
         csrw satp, zero
+
+        // Save the boot hart ID, passed to us by the bootloader in a0.
+        la t0, BOOT_HART_ID
+        sw a0, (t0)
         "#,
         r#"
         // Clear .bss. The linker script ensures that the start and end are
         // both 8-byte aligned.
-        lla t0, __bss_start
-        lla t1, __bss_end
+        la t0, __bss_start
+        la t1, __bss_end
         0:
         sw zero, 0(t0)
-        sw zero, 4(t0)
-        add t0, t0, 8
+        add t0, t0, {word_size}
         blt t0, t1, 0b
 
         // Our stack is now ready.
-        lla sp, .Lstack_end
+        la sp, .Lstack_end
 
         // Tail into hark_main, as there's real benefit to keeping this
         // callframe around.
-        j hark_main
+        call hark_main
         "#,
+        word_size = const size_of::<usize>(),
         #[cfg(not(riscv_m_mode))]
         sstatus_sie = const Sstatus::SIE_BIT)
 }

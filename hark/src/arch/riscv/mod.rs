@@ -10,7 +10,11 @@ mod sbi;
 pub(crate) use sbi::*;
 
 mod exception;
+
 mod start;
+
+#[cfg(not(riscv_m_mode))]
+use start::BOOT_HART_ID;
 
 use core::{fmt, mem, ptr};
 
@@ -174,5 +178,6 @@ impl ArchCommon for Arch {
     #[cfg(not(riscv_m_mode))]
     fn print_machine_context() {
         println!("Entry mode: S");
+        println!("Boot hart ID: {BOOT_HART_ID:#}");
     }
 }
