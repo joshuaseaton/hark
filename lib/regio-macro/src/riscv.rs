@@ -44,18 +44,20 @@ impl CsrAttrs {
             AccessMode::WriteOnly => format!("Writes `{csr}`."),
         };
 
+        let marker_impls = access.marker_impls(type_name);
         quote! {
             #input
 
-            impl ::regio::Spec for #type_name {
+            impl ::regio::Register for #type_name {
                 type Base = <#type_name as ::core::ops::Deref>::Target;
                 type Addr = ();
-                type Access = #access;
             }
 
             impl ::regio::FixedAddr for #type_name {
                 const ADDR: () = ();
             }
+
+            #marker_impls
 
             impl ::regio::DefaultIo for #type_name {
                 #[doc = #io_doc]

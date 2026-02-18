@@ -8,7 +8,7 @@ mod riscv;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{ToTokens, quote};
+use quote::quote;
 use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::{DeriveInput, Expr, Ident, Token, parse_macro_input};
 
@@ -17,18 +17,20 @@ pub fn offset(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
     let ty = &input.ident;
     let OffsetAttrs { offset, access } = parse_macro_input!(attr as OffsetAttrs);
+    let marker_impls = access.marker_impls(ty);
     quote! {
         #input
 
-        impl ::regio::Spec for #ty {
+        impl ::regio::Register for #ty {
             type Base = <Self as ::core::ops::Deref>::Target;
             type Addr = ::regio::Offset;
-            type Access = #access;
         }
 
         impl ::regio::FixedAddr for #ty {
             const ADDR: ::regio::Offset = ::regio::Offset(#offset);
         }
+
+        #marker_impls
     }
     .into()
 }
@@ -82,13 +84,19 @@ impl Parse for AccessMode {
     }
 }
 
-impl ToTokens for AccessMode {
-    fn to_tokens(&self, tokens: &mut TokenStream2) {
+impl AccessMode {
+    pub(crate) fn marker_impls(&self, ty: &Ident) -> TokenStream2 {
         match self {
-            AccessMode::ReadOnly => quote! { ::regio::ReadOnly },
-            AccessMode::ReadWrite => quote! { ::regio::ReadWrite },
-            AccessMode::WriteOnly => quote! { ::regio::WriteOnly },
+            AccessMode::ReadOnly => quote! {
+                impl ::regio::Readable for #ty {}
+            },
+            AccessMode::ReadWrite => quote! {
+                impl ::regio::Readable for #ty {}
+                impl ::regio::Writable for #ty {}
+            },
+            AccessMode::WriteOnly => quote! {
+                impl ::regio::Writable for #ty {}
+            },
         }
-        .to_tokens(tokens);
     }
 }

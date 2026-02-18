@@ -8,9 +8,10 @@
 ///
 /// Placed on a struct implementing the [`Register`](crate::Register) bounds
 /// (`Deref` and `From`), this generates the regio trait implementations
-/// ([`Spec`](crate::Spec), [`FixedAddr`](crate::FixedAddr),
-/// [`DefaultIo`](crate::DefaultIo)) and an I/O backend using inline `csrr`
-/// and `csrw` instructions.
+/// ([`Register`](crate::Register), [`FixedAddr`](crate::FixedAddr),
+/// [`DefaultIo`](crate::DefaultIo)), the appropriate access marker traits
+/// ([`Readable`](crate::Readable) and/or [`Writable`](crate::Writable)),
+/// and an I/O backend using inline `csrr` and `csrw` instructions.
 ///
 /// ## Parameters
 ///
@@ -18,9 +19,8 @@
 ///
 ///   - *Required:* the CSR name (e.g., `sstatus` or `marchid`).
 ///     <br><br>
-///   - *Optional:* one of `ro`, `rw`, or `wo`, corresponding to
-///     [`ReadOnly`](crate::ReadOnly), [`ReadWrite`](crate::ReadWrite), or
-///     [`WriteOnly`](crate::WriteOnly), respectively.
+///   - *Optional:* one of `ro`, `rw`, or `wo`, indicating read-only,
+///     read-write, or write-only access, respectively.
 ///
 ///     *Default:* `rw`
 ///

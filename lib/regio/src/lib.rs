@@ -15,12 +15,11 @@ use zerocopy::{FromBytes, IntoBytes};
 
 /// Associates a type as being a register addressed at a fixed offset.
 ///
-/// Requires that the type implements `core::ops::Deref`. Implements
-/// `regio::Spec` with
-///   * `Base = <Self as core::ops::Deref>::Target`
-///   * `Addr = regio::Offset`;
-///   * and `Access` as given by the second parameter, defaulting to
-///     `regio::ReadWrite`
+/// Requires that the type implements `core::ops::Deref` and
+/// `From<<Self as core::ops::Deref>::Target>`. Implements
+/// [`Register`] (with `Base = <Self as core::ops::Deref>::Target` and
+/// `Addr = regio::Offset`), [`FixedAddr`], and the appropriate access marker
+/// traits ([`Readable`] and/or [`Writable`]).
 ///
 /// ## Parameters
 ///
@@ -28,8 +27,8 @@ use zerocopy::{FromBytes, IntoBytes};
 ///
 ///   - *Required:* the register offset as a `usize` expression.
 ///     <br><br>
-///   - *Optional:* one of `ro`, `rw`, or `wo`, corresponding to
-///     `regio::{ReadOnly, ReadWrite, WriteOnly}`, respectively.
+///   - *Optional:* one of `ro`, `rw`, or `wo`, indicating read-only,
+///     read-write, or write-only access, respectively.
 ///
 ///     *Default:* `rw`
 ///
@@ -51,65 +50,41 @@ pub trait IoBackend {
 }
 
 /// A marker trait for registers permitting reads.
-pub trait Readable: AccessMode {}
+pub trait Readable {}
 
 /// A marker trait for registers permitting writes.
-pub trait Writable: AccessMode {}
+pub trait Writable {}
 
-/// A tag type describing a register as being read-only.
-pub struct ReadOnly {}
-impl AccessMode for ReadOnly {}
-impl Readable for ReadOnly {}
+/// A register with a fixed, known address.
+pub trait FixedAddr: Register {
+    const ADDR: Self::Addr;
+}
 
-/// A tag type describing a register as being readable and writable.
-pub struct ReadWrite {}
-impl AccessMode for ReadWrite {}
-impl Readable for ReadWrite {}
-impl Writable for ReadWrite {}
+/// A register with no fixed address.
+pub trait UnfixedAddr: Register {}
 
-/// A tag type describing a register as being write-only.
-pub struct WriteOnly {}
-impl AccessMode for WriteOnly {}
-impl Writable for WriteOnly {}
+/// A register with a default (and default-constructible) I/O backend.
+pub trait DefaultIo: Register {
+    type Io: Default + IoBackend<Base = Self::Base, Addr = Self::Addr>;
+}
 
-/// An abstract register specification.
-pub trait Spec {
+/// A register type, with flexibly abstracted I/O and addressing.
+pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
     /// The underlying type of the register (expected to be an unsigned integral
     /// type).
     type Base: Copy;
 
     /// An abstract register addressing scheme, which need not represent a
-    /// conventional address type.
+    /// conventional address in memory.
     type Addr: Copy;
 
-    /// The access modes permitted by the associated register. Bounded by an
-    /// internal trait, this type must be one of [`ReadOnly`], [`ReadWrite`],
-    /// or [`WriteOnly`].
-    type Access: AccessMode;
-}
-
-/// A register with a fixed, known address.
-pub trait FixedAddr: Spec {
-    const ADDR: Self::Addr;
-}
-
-/// A register with no fixed address.
-pub trait UnfixedAddr: Spec {}
-
-/// A register with a default (and default-constructible) I/O backend.
-pub trait DefaultIo: Spec {
-    type Io: Default + IoBackend<Base = Self::Base, Addr = Self::Addr>;
-}
-
-/// A register type, with flexibly abstracted I/O and addressing.
-pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     /// Only enabled if the register is readable with an unfixed address, this
     /// method reads the register value from any compatible backend at a given
-    /// address
+    /// address.
     #[inline]
     fn read_from_at<Io>(io: &Io, addr: Self::Addr) -> Self
     where
-        Self: UnfixedAddr + Spec<Access: Readable>,
+        Self: Readable + UnfixedAddr,
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
     {
         Self::from(io.read_at(addr))
@@ -121,30 +96,30 @@ pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     #[inline]
     fn read_from<Io>(io: &Io) -> Self
     where
-        Self: FixedAddr + Spec<Access: Readable>,
+        Self: Readable + FixedAddr,
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
     {
         Self::from(io.read_at(Self::ADDR))
     }
 
     /// Only enabled if the register is readable with an unfixed address and a
-    /// I/O default backend, this reads the register from its associated backend
+    /// default I/O backend, this reads the register from its associated backend
     /// at the given address.
     #[inline]
     fn read_at(addr: Self::Addr) -> Self
     where
-        Self: UnfixedAddr + DefaultIo + Spec<Access: Readable>,
+        Self: Readable + UnfixedAddr + DefaultIo,
     {
         Self::from(Self::Io::default().read_at(addr))
     }
 
-    /// Only enabled if the register is redable with a fixed address and a
+    /// Only enabled if the register is readable with a fixed address and a
     /// default I/O backend, this method reads the register value from its
     /// associated backend at its associated address.
     #[inline]
     fn read() -> Self
     where
-        Self: FixedAddr + DefaultIo + Spec<Access: Readable>,
+        Self: Readable + FixedAddr + DefaultIo,
     {
         Self::from(Self::Io::default().read_at(Self::ADDR))
     }
@@ -155,7 +130,7 @@ pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     #[inline]
     fn write_to_at<Io>(self, io: &Io, addr: Self::Addr)
     where
-        Self: UnfixedAddr + Spec<Access: Writable>,
+        Self: Writable + UnfixedAddr,
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
     {
         io.write_at(*self, addr)
@@ -167,7 +142,7 @@ pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     #[inline]
     fn write_to<Io>(self, io: &Io)
     where
-        Self: FixedAddr + Spec<Access: Writable>,
+        Self: Writable + FixedAddr,
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
     {
         io.write_at(*self, Self::ADDR)
@@ -179,7 +154,7 @@ pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     #[inline]
     fn write_at(self, addr: Self::Addr)
     where
-        Self: UnfixedAddr + DefaultIo + Spec<Access: Writable>,
+        Self: Writable + UnfixedAddr + DefaultIo,
     {
         Self::Io::default().write_at(*self, addr)
     }
@@ -190,37 +165,37 @@ pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     #[inline]
     fn write(self)
     where
-        Self: FixedAddr + DefaultIo + Spec<Access: Writable>,
+        Self: Writable + FixedAddr + DefaultIo,
     {
         Self::Io::default().write_at(*self, Self::ADDR)
     }
 
     /// Only enabled if the register is readable and writable with an unfixed
-    /// address, this method performs a read-modify-write with on any compatible
+    /// address, this method performs a read-modify-write on any compatible
     /// I/O backend at a given address.
     #[inline]
     fn modify_with_at<Io, F>(io: &Io, mutate: F, addr: Self::Addr)
     where
-        Self: UnfixedAddr + Spec<Access: Readable + Writable>,
+        Self: Readable + Writable + UnfixedAddr,
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
         F: FnOnce(&mut Self),
     {
-        let mut value = Register::read_from_at(io, addr);
+        let mut value = Self::read_from_at(io, addr);
         mutate(&mut value);
         value.write_to_at(io, addr)
     }
 
-    /// Only enabled if the register is readable and writable with an fixed
-    /// address, this method performs a read-modify-write with on any compatible
-    /// I/O backend at its associatedaddress.
+    /// Only enabled if the register is readable and writable with a fixed
+    /// address, this method performs a read-modify-write on any compatible
+    /// I/O backend at its associated address.
     #[inline]
     fn modify_with<Io, F>(io: &Io, mutate: F)
     where
-        Self: FixedAddr + Spec<Access: Readable + Writable>,
+        Self: Readable + Writable + FixedAddr,
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
         F: FnOnce(&mut Self),
     {
-        let mut value = Register::read_from(io);
+        let mut value = Self::read_from(io);
         mutate(&mut value);
         value.write_to(io)
     }
@@ -231,34 +206,28 @@ pub trait Register: Spec + From<Self::Base> + Deref<Target = Self::Base> {
     #[inline]
     fn modify_at<F>(mutate: F, addr: Self::Addr)
     where
-        Self: UnfixedAddr + DefaultIo + Spec<Access: Readable + Writable>,
+        Self: Readable + Writable + UnfixedAddr + DefaultIo,
         F: FnOnce(&mut Self),
     {
-        let mut value = Register::read_at(addr);
+        let mut value = Self::read_at(addr);
         mutate(&mut value);
         value.write_at(addr)
     }
 
-    /// Only enabled if the register has a fixed address and a fixed I/O
-    /// backend supporting reads and writes, this method performs a
-    /// read-modify-write at the register's address on its backend.
-    ///
     /// Only enabled if the register is readable and writable with a fixed
     /// address and a default I/O backend, this method performs a
     /// read-modify-write with its associated backend at its associated address.
     #[inline]
     fn modify<F>(mutate: F)
     where
-        Self: FixedAddr + DefaultIo + Spec<Access: Readable + Writable>,
+        Self: Readable + Writable + FixedAddr + DefaultIo,
         F: FnOnce(&mut Self),
     {
-        let mut value = Register::read();
+        let mut value = Self::read();
         mutate(&mut value);
         value.write()
     }
 }
-
-impl<T> Register for T where T: Spec + From<Self::Base> + Deref<Target = Self::Base> {}
 
 /// An offset into an MMIO aperture at some context-defined stride.
 #[derive(Clone, Copy, Debug)]
@@ -273,9 +242,6 @@ impl Deref for Offset {
 }
 
 mod internal {
-    // A marker trait for I/O access modes.
-    pub trait AccessMode {}
-
     pub trait FitsIn<Access> {
         fn widen(self) -> Access;
         fn truncate(access: Access) -> Self;
@@ -305,8 +271,6 @@ mod internal {
     fits_in!(u32, u64);
     fits_in!(u64, u64);
 }
-use internal::AccessMode;
-
 /// Represents an aperture of memory-mapped I/O.
 ///
 /// Implements an [`IoBackend`] parameterized by the logical register width
@@ -328,20 +292,20 @@ use internal::AccessMode;
 /// that can be widened to and truncated from a type representing a wider bus
 /// width. This trait is implemented for for all pairs of unsigned integer types
 /// up to u64 where `Self` is no wider than `Access`.
-pub struct Mmio<Reg, AccessType = Reg>
+pub struct Mmio<Reg, Access = Reg>
 where
-    Reg: internal::FitsIn<AccessType>,
-    AccessType: FromBytes + IntoBytes,
+    Reg: internal::FitsIn<Access>,
+    Access: FromBytes + IntoBytes,
 {
-    base: *mut AccessType,
+    base: *mut Access,
     size: usize,
     phantom: PhantomData<Reg>,
 }
 
-impl<Reg, AccessType> Mmio<Reg, AccessType>
+impl<Reg, Access> Mmio<Reg, Access>
 where
-    Reg: internal::FitsIn<AccessType>,
-    AccessType: FromBytes + IntoBytes,
+    Reg: internal::FitsIn<Access>,
+    Access: FromBytes + IntoBytes,
 {
     /// Creates an MMIO backend over the given aperture.
     pub fn new(base: usize, size: usize) -> Self {
@@ -353,10 +317,10 @@ where
     }
 }
 
-impl<Reg, AccessType> IoBackend for Mmio<Reg, AccessType>
+impl<Reg, Access> IoBackend for Mmio<Reg, Access>
 where
-    Reg: internal::FitsIn<AccessType>,
-    AccessType: FromBytes + IntoBytes,
+    Reg: internal::FitsIn<Access>,
+    Access: FromBytes + IntoBytes,
 {
     type Addr = Offset;
     type Base = Reg;
