@@ -71,7 +71,9 @@ extern "C" fn _start() {
         // Our stack is now ready.
         lla sp, .Lstack_end
 
-        call hark_main
+        // Tail into hark_main, as there's real benefit to keeping this
+        // callframe around.
+        j hark_main
         "#,
         #[cfg(not(riscv_m_mode))]
         sstatus_sie = const Sstatus::SIE_BIT)

@@ -5,3 +5,5 @@
 // https://opensource.org/licenses/MIT
 
 pub mod debug;
+pub mod panic;
+pub use panic::*;

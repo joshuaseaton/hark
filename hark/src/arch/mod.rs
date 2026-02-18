@@ -12,7 +12,12 @@ cfg_if::cfg_if! {
 }
 
 trait ArchCommon {
+    fn init();
     fn print_machine_context();
+}
+
+pub(crate) fn init() {
+    Arch::init();
 }
 
 // Prints generic machine context, as enumerated from the CPU.

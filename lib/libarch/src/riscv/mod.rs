@@ -7,7 +7,7 @@
 mod sbi;
 pub use sbi::*;
 
-use core::{arch::asm, ptr};
+use core::{arch::asm, fmt, ptr};
 
 use bitfld::{bitfield_repr, layout};
 use derive_more::{Deref, From};
@@ -91,7 +91,7 @@ pub struct Mimpid(usize);
 pub struct Mhartid(usize);
 
 #[bitfield_repr(u8)]
-pub enum MtvecMode {
+pub enum TrapVectorMode {
     // All traps set pc to BASE.
     Direct = 0,
 
@@ -112,9 +112,130 @@ layout!({
         {
             let base: Bits<31, 2>;
         }
-        let mode: Bits<1, 0, MtvecMode>;
+        let mode: Bits<1, 0, TrapVectorMode>;
     }
 });
+
+/// `mscratch`: Machine Scratch Register
+#[csr(mscratch)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Mscratch(usize);
+
+/// `mepc`: Machine Exception Program Counter Register
+#[csr(mepc)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Mepc(usize);
+
+#[derive(Debug, Deref, Eq, PartialEq)]
+pub struct ExceptionCode(usize);
+
+impl ExceptionCode {
+    pub const INSTRUCTION_ADDRESS_MISALIGNED: Self = Self(0);
+    pub const INSTRUCTION_ACCESS_FAULT: Self = Self(1);
+    pub const ILLEGAL_INSTRUCTION: Self = Self(2);
+    pub const BREAKPOINT: Self = Self(3);
+    pub const LOAD_ADDRESS_MISALIGNED: Self = Self(4);
+    pub const LOAD_ACCESS_FAULT: Self = Self(5);
+    pub const STORE_OR_AMO_ADDRESS_MISALIGNED: Self = Self(6);
+    pub const STORE_OR_AMO_ADDRESS_ACCESS_FAULT: Self = Self(7);
+    pub const ENVIRONMENT_CALL_FROM_U_MODE: Self = Self(8);
+    pub const ENVIRONMENT_CALL_FROM_S_MODE: Self = Self(9);
+    // 10 is reserved
+    pub const ENVIRONMENT_CALL_FROM_M_MODE: Self = Self(11);
+    pub const INSTRUCTION_PAGE_FAULT: Self = Self(12);
+    pub const LOAD_PAGE_FAULT: Self = Self(13);
+    // 14 is reserved
+    pub const STORE_OR_AMO_PAGE_FAULT: Self = Self(15);
+    pub const DOUBLE_TRAP: Self = Self(16);
+    // 17 is reserved
+    pub const SOFTWARE_CHECK: Self = Self(18);
+    pub const HARDWARE_ERROR: Self = Self(19);
+    // 20-23 are reserved
+    // 24-31 are designated
+    // 32-47 are reserved
+    // 48-63 are designated
+    // >= 64 are reserved
+}
+
+impl fmt::Display for ExceptionCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Self::INSTRUCTION_ADDRESS_MISALIGNED => write!(f, "instruction address misaligned"),
+            Self::INSTRUCTION_ACCESS_FAULT => write!(f, "instruction access fault"),
+            Self::ILLEGAL_INSTRUCTION => write!(f, "illegal instruction"),
+            Self::BREAKPOINT => write!(f, "breakpoint"),
+            Self::LOAD_ADDRESS_MISALIGNED => write!(f, "load address misaligned"),
+            Self::LOAD_ACCESS_FAULT => write!(f, "access fault"),
+            Self::STORE_OR_AMO_ADDRESS_MISALIGNED => write!(f, "store/AMO address misaligned"),
+            Self::STORE_OR_AMO_ADDRESS_ACCESS_FAULT => write!(f, "store/AMO address access fault"),
+            Self::ENVIRONMENT_CALL_FROM_U_MODE => write!(f, "environment call from U-mode"),
+            Self::ENVIRONMENT_CALL_FROM_S_MODE => write!(f, "environment call from S-mode"),
+            Self::ENVIRONMENT_CALL_FROM_M_MODE => write!(f, "environment call from M-mode"),
+            Self::INSTRUCTION_PAGE_FAULT => write!(f, "instruction page fault"),
+            Self::LOAD_PAGE_FAULT => write!(f, "load page fault"),
+            Self::STORE_OR_AMO_PAGE_FAULT => write!(f, "store/AMO page fault"),
+            Self::DOUBLE_TRAP => write!(f, "double trap"),
+            Self::SOFTWARE_CHECK => write!(f, "software check"),
+            Self::HARDWARE_ERROR => write!(f, "hardware error"),
+            _ => write!(f, "Unknown exception code: {}", **self),
+        }
+    }
+}
+
+#[derive(Debug, Deref, Eq, PartialEq)]
+pub struct InterruptCode(usize);
+
+impl InterruptCode {
+    // 0 is reserved
+    pub const SUPERVISOR_SOFTWARE_INTERRUPT: Self = Self(1);
+    // 2 is reserved
+    pub const MACHINE_SOFTWARE_INTERRUPT: Self = Self(3);
+    // 4 is reserved
+    pub const SUPERVISOR_TIMER_INTERRUPT: Self = Self(5);
+    // 6 is reserved
+    pub const MACHINE_TIME_INTERRUPT: Self = Self(7);
+    // 8 is reserved
+    pub const SUPERVISOR_EXTERNAL_INTERRUPT: Self = Self(9);
+    // 10 is reserved
+    pub const MACHINE_EXTERNAL_INTERRUPT: Self = Self(11);
+    // 12 is reserved
+    pub const COUNTER_OVERFLOW_INTERRUPT: Self = Self(3);
+    // 14-15 is reserved
+    // >= 16 is designated for platform use
+}
+
+layout!({
+    /// `mcause`: Machine Cause Register.
+    #[csr(mcause)]
+    pub struct Mcause(usize);
+    {
+        #[cfg(target_pointer_width = "64")]
+        {
+            let interrupt: Bit<63>;
+            let code: Bits<62, 0>;
+        }
+        #[cfg(target_pointer_width = "32")]
+        {
+            let interrupt: Bit<31>;
+            let code: Bits<30, 0>;
+        }
+    }
+});
+
+impl Mcause {
+    pub fn exception_code(self) -> ExceptionCode {
+        ExceptionCode(self.code() as usize)
+    }
+
+    pub fn interrupt_code(self) -> InterruptCode {
+        InterruptCode(self.code() as usize)
+    }
+}
+
+/// `mtval`: Machine Trap Value Register
+#[csr(mtval)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Mtval(usize);
 
 #[bitfield_repr(u8)]
 pub enum Xlen {
@@ -168,6 +289,66 @@ layout!({
         let _: Bit<0>;
     }
 });
+
+layout!({
+    /// `stvec`: Supervisor Trap-Vector Base-Address Register
+    #[csr(stvec)]
+    pub struct Stvec(usize);
+    {
+        #[cfg(target_pointer_width = "64")]
+        {
+            let base: Bits<63, 2>;
+        }
+        #[cfg(target_pointer_width = "32")]
+        {
+            let base: Bits<31, 2>;
+        }
+        let mode: Bits<1, 0, TrapVectorMode>;
+    }
+});
+
+/// `sscratch`: Supervisor Scratch Register
+#[csr(sscratch)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Sscratch(usize);
+
+/// `sepc`: Supervisor Exception Program Counter Register
+#[csr(sepc)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Sepc(usize);
+
+layout!({
+    /// `scause`: Supervisor Cause Register.
+    #[csr(scause)]
+    pub struct Scause(usize);
+    {
+        #[cfg(target_pointer_width = "64")]
+        {
+            let interrupt: Bit<63>;
+            let code: Bits<62, 0>;
+        }
+        #[cfg(target_pointer_width = "32")]
+        {
+            let interrupt: Bit<31>;
+            let code: Bits<30, 0>;
+        }
+    }
+});
+
+impl Scause {
+    pub fn exception_code(self) -> ExceptionCode {
+        ExceptionCode(self.code() as usize)
+    }
+
+    pub fn interrupt_code(self) -> InterruptCode {
+        InterruptCode(self.code() as usize)
+    }
+}
+
+/// `stval`: Supervisor Trap Value Register
+#[csr(stval)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Stval(usize);
 
 cfg_if::cfg_if! {
     if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {

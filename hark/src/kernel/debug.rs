@@ -116,13 +116,21 @@ pub fn build_id() -> BuildId {
 }
 
 // Prints the LLVM symbolizer markup for offline symbolization.
-pub(crate) fn print_backtrace(fp: usize) {
+pub(crate) fn print_backtrace(fp: usize, pc: Option<usize>) {
     println!("Backtrace:");
     print_reset_element();
     print_module_element();
     print_mmap_element();
+
+    let idx_offset = if let Some(pc) = pc {
+        print_bt_pc_element(0, pc);
+        1
+    } else {
+        0
+    };
+
     for (idx, addr) in Backtrace::new(fp).enumerate() {
-        print_bt_element(idx, addr);
+        print_bt_ra_element(idx + idx_offset, addr);
     }
 }
 
@@ -157,6 +165,11 @@ fn print_mmap_element() {
 }
 
 #[inline(never)]
-fn print_bt_element(index: usize, return_address: usize) {
+fn print_bt_ra_element(index: usize, return_address: usize) {
     println!("{{{{{{bt:{index}:{:#x}:ra}}}}}}", return_address);
+}
+
+#[inline(never)]
+fn print_bt_pc_element(index: usize, pc: usize) {
+    println!("{{{{{{bt:{index}:{:#x}:pc}}}}}}", pc);
 }
