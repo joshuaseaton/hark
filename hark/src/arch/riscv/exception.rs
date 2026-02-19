@@ -10,7 +10,7 @@ use core::mem::offset_of;
 use libarch::riscv::{ExceptionCode, TrapVectorMode};
 use regio::Register;
 
-use crate::arch::riscv::{PerCpu, Regs, get_percpu};
+use crate::arch::riscv::Regs;
 use crate::kernel::panic_common;
 use crate::{print, println};
 
@@ -20,11 +20,6 @@ cfg_if::cfg_if! {
         type Xtval = libarch::riscv::Mtval;
         type Xtvec = libarch::riscv::Mtvec;
 
-        macro_rules! swap_xscratch_with_t0 {
-            () => {
-                "csrrw t0, mscratch, t0"
-            };
-        }
         macro_rules! read_xepc_into_t0 {
             () => {
                 "csrr t0, mepc"
@@ -36,11 +31,6 @@ cfg_if::cfg_if! {
         type Xtval = libarch::riscv::Stval;
         type Xtvec = libarch::riscv::Stvec;
 
-        macro_rules! swap_xscratch_with_t0 {
-            () => {
-                "csrrw t0, sscratch, t0"
-            };
-        }
         macro_rules! read_xepc_into_t0 {
             () => {
                 "csrr t0, sepc"
@@ -49,9 +39,6 @@ cfg_if::cfg_if! {
 
     }
 }
-
-// Relied upon at the top of exception_entry().
-const _: () = const { assert!(offset_of!(PerCpu, exception_scratch_regs) == 0) };
 
 pub(super) fn init() {
     let entry = (exception_entry as *const ()).addr();
@@ -64,58 +51,60 @@ pub(super) fn init() {
 #[unsafe(naked)]
 extern "C" fn exception_entry() {
     naked_asm!(
-        // Reading in xscratch to get the percpu pointer will trash a register
-        // that we have yet to record. So we swap the xscratch value with t0,
-        // saving recording t0 for later when we have a spare register. Note
-        // that the register scratch area is the first field in the percpu
-        // struct (asserted above) so the pointer points to that as well.
-        swap_xscratch_with_t0!(),
         r#"
-        // Save pc for the end for when we have a spare register for reading in
-        // xepc.
-        sw ra, {ra_offset}(t0)
-        sw sp, {sp_offset}(t0)
-        sw gp, {gp_offset}(t0)
-        sw tp, {tp_offset}(t0)
-        sw t1, {t1_offset}(t0)
-        sw t2, {t2_offset}(t0)
-        sw s0, {s0_offset}(t0)
-        sw s1, {s1_offset}(t0)
-        sw a0, {a0_offset}(t0)
-        sw a1, {a1_offset}(t0)
-        sw a2, {a2_offset}(t0)
-        sw a3, {a3_offset}(t0)
-        sw a4, {a4_offset}(t0)
-        sw a5, {a5_offset}(t0)
-        sw a6, {a6_offset}(t0)
-        sw a7, {a7_offset}(t0)
-        sw s2, {s2_offset}(t0)
-        sw s3, {s3_offset}(t0)
-        sw s4, {s4_offset}(t0)
-        sw s5, {s5_offset}(t0)
-        sw s6, {s6_offset}(t0)
-        sw s7, {s7_offset}(t0)
-        sw s8, {s8_offset}(t0)
-        sw s9, {s9_offset}(t0)
-        sw s10, {s10_offset}(t0)
-        sw s11, {s11_offset}(t0)
-        sw t3, {t3_offset}(t0)
-        sw t4, {t4_offset}(t0)
-        sw t5, {t5_offset}(t0)
-        sw t6, {t6_offset}(t0)
+        // We save registers onto the stack, making sure not to trash any before
+        // we do.
+        //
+        // Save pc for later, when we have a spare register for reading in xepc.
+        addi sp, sp, -{sizeof_regs}
+        sw ra, {ra_offset}(sp)
+        // We've just modified sp, so defer recording the original as well.
+        sw gp, {gp_offset}(sp)
+        sw tp, {tp_offset}(sp)
+        sw t0, {t0_offset}(sp)
+        sw t1, {t1_offset}(sp)
+        sw t2, {t2_offset}(sp)
+        sw s0, {s0_offset}(sp)
+        sw s1, {s1_offset}(sp)
+        sw a0, {a0_offset}(sp)
+        sw a1, {a1_offset}(sp)
+        sw a2, {a2_offset}(sp)
+        sw a3, {a3_offset}(sp)
+        sw a4, {a4_offset}(sp)
+        sw a5, {a5_offset}(sp)
+        sw a6, {a6_offset}(sp)
+        sw a7, {a7_offset}(sp)
+        sw s2, {s2_offset}(sp)
+        sw s3, {s3_offset}(sp)
+        sw s4, {s4_offset}(sp)
+        sw s5, {s5_offset}(sp)
+        sw s6, {s6_offset}(sp)
+        sw s7, {s7_offset}(sp)
+        sw s8, {s8_offset}(sp)
+        sw s9, {s9_offset}(sp)
+        sw s10, {s10_offset}(sp)
+        sw s11, {s11_offset}(sp)
+        sw t3, {t3_offset}(sp)
+        sw t4, {t4_offset}(sp)
+        sw t5, {t5_offset}(sp)
+        sw t6, {t6_offset}(sp)
+
+        // With t0 freed up, we can recover the original sp value and store
+        // that.
+        addi t0, sp, {sizeof_regs}
+        sw t0, {sp_offset}(sp)
         "#,
-        // Before we swap t0 back with the xscratch pointer, we save the pointer
-        // since we still have t0 and pc to record.
-        "mv t1, t0",
-        swap_xscratch_with_t0!(),
-        "sw t0, {t0_offset}(t1)",
         read_xepc_into_t0!(),
         r#"
-        sw t0, {pc_offset}(t1)
+        sw t0, {pc_offset}(sp)
+
+        // Now we have a Regs struct that we can pass to handle_exception.
+        mv a0, sp
 
         // All registers recorded! Back to Rust...
         j handle_exception
         "#,
+        sizeof_regs = const size_of::<Regs>(),
         pc_offset = const offset_of!(Regs, pc),
         ra_offset = const offset_of!(Regs, ra),
         sp_offset = const offset_of!(Regs, sp),
@@ -152,8 +141,7 @@ extern "C" fn exception_entry() {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn handle_exception() -> ! {
-    let regs = &get_percpu().exception_scratch_regs;
+extern "C" fn handle_exception(regs: &Regs) -> ! {
     panic_common(regs.s0, Some(regs.pc), || {
         let xtval = *Xtval::read();
         print!("Exception: {}", Xcause::read().exception_code());

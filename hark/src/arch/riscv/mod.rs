@@ -41,13 +41,7 @@ static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
 
 #[repr(C)]
 #[derive(Debug, Default)]
-pub struct PerCpu {
-    // The scratch area used at the top of the main exception handling routine
-    // to store register state for later exception context printing. We keep
-    // this first so that the percpu pointer also points to the scratch area,
-    // which the exception handling routine can take advantage of.
-    pub exception_scratch_regs: Regs,
-}
+pub struct PerCpu {}
 
 #[repr(C)]
 #[derive(Debug, Default)]
