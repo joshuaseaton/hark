@@ -11,6 +11,7 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;
 
+use derive_more::{Deref, From};
 use zerocopy::{FromBytes, IntoBytes};
 
 /// Associates a type as being a register addressed at a fixed offset.
@@ -394,16 +395,8 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
 }
 
 /// An offset into an MMIO aperture at some context-defined stride.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deref, Eq, From, PartialEq)]
 pub struct Offset(pub usize);
-
-impl Deref for Offset {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 mod internal {
     pub trait FitsIn<Access> {

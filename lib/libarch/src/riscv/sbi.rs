@@ -8,13 +8,13 @@ use core::arch::asm;
 use core::error;
 use core::fmt;
 use core::num::NonZeroIsize;
-use core::ops::Deref;
 
 use bitfld::layout;
+use derive_more::{Deref, From};
 
 /// Represents an SBI call error.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deref, From, Eq, PartialEq)]
 pub struct Error(NonZeroIsize);
 
 impl Error {
@@ -54,16 +54,9 @@ impl fmt::Display for Error {
 
 impl error::Error for Error {}
 
-impl Deref for Error {
-    type Target = NonZeroIsize;
-
-    /// Returns the underlying error code.
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 /// Represents an SBI implementation ID.
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, Deref, Eq, PartialEq)]
 pub struct ImplementationId(usize);
 
 impl ImplementationId {
@@ -74,15 +67,6 @@ impl ImplementationId {
     pub const RUST_SBI: usize = 4;
     pub const DIOSIX: usize = 5;
     pub const COFFER: usize = 6;
-}
-
-impl Deref for ImplementationId {
-    type Target = usize;
-
-    /// Returns the underlying implementation ID value.
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
 }
 
 impl fmt::Display for ImplementationId {

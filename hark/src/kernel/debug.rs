@@ -4,8 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use core::{fmt, ops, ptr};
+use core::{fmt, ptr};
 
+use derive_more::{Deref, From};
 use libarch::Backtrace;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
 
@@ -26,16 +27,8 @@ unsafe extern "C" {
 static mut BUILD_ID: BuildId = BuildId(&[]);
 
 /// Represents a GNU build ID.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deref, Eq, From, PartialEq)]
 pub struct BuildId(&'static [u8]);
-
-impl ops::Deref for BuildId {
-    type Target = &'static [u8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 impl fmt::Display for BuildId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
