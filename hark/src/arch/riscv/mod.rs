@@ -30,11 +30,21 @@ cfg_if::cfg_if! {
     }
 }
 
-#[cfg(riscv_m_mode)]
-type Xscratch = libarch::riscv::Mscratch;
-
-#[cfg(not(riscv_m_mode))]
-type Xscratch = libarch::riscv::Sscratch;
+cfg_if::cfg_if! {
+    if #[cfg(riscv_m_mode)] {
+        type Xie = libarch::riscv::Mie;
+        type Xscratch = libarch::riscv::Mscratch;
+        type Xstatus = libarch::riscv::Mstatus;
+        type Xtval = libarch::riscv::Mtval;
+        type Xtvec = libarch::riscv::Mtvec;
+    } else {
+        type Xie = libarch::riscv::Sie;
+        type Xscratch = libarch::riscv::Sscratch;
+        type Xstatus = libarch::riscv::Sstatus;
+        type Xtval = libarch::riscv::Stval;
+        type Xtvec = libarch::riscv::Stvec;
+    }
+}
 
 #[used]
 static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];

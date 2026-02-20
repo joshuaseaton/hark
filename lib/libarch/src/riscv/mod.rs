@@ -23,6 +23,16 @@ cfg_if::cfg_if! {
     }
 }
 
+/// `time`: Timer for RDTIME instruction.
+#[csr(time, ro)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Time(usize);
+
+/// `timeh`: Upper 32 bits of `time` (RV32 only).
+#[cfg_attr(target_arch = "riscv32", csr(timeh, ro))]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Timeh(u32);
+
 layout!({
     /// `misa`: Machine ISA Register
     #[csr(misa)]
@@ -90,6 +100,88 @@ pub struct Mimpid(usize);
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mhartid(usize);
 
+layout!({
+    /// `mstatus`: Machine Status Register.
+    #[csr(mstatus)]
+    pub struct Mstatus(usize);
+    {
+        #[cfg(target_pointer_width = "64")]
+        {
+            let sd: Bit<63>; // State Dirty
+            let _: Bits<62, 43>;
+            let mdt: Bit<42>; // Machine Double Trap
+            let mpelp: Bit<41>; // Machine Previous Expected Landing Pad
+            let _: Bit<40>;
+            let mpv: Bit<39>; // Machine Previous Virtualization mode
+            let gva: Bit<38>; // Guest Virtual Address
+            let mbe: Bit<37>; // Machine Big-Endian
+            let sbe: Bit<36>; // Supervisor Big-Endian
+            let sxl: Bits<35, 34>; // SXLEN
+            let uxl: Bits<33, 32, Xlen>; // UXLEN
+            let _: Bit<31>;
+        }
+        #[cfg(target_pointer_width = "32")]
+        {
+            let sd: Bit<31>;
+        }
+
+        let _: Bits<30, 25>;
+        let sdt: Bit<24>; // Software Double Trap
+        let spelp: Bit<23>; // Supervisor Previous Expected Landing Pad
+        let tsr: Bit<22>; // Trap SRet
+        let tw: Bit<21>; // Timeout Wait
+        let tvm: Bit<20>; // Trap Virtual Memory
+        let mxr: Bit<19>; // Make eXecutable Readable
+        let sum: Bit<18>; // Supervisor User Memory
+        let mprv: Bit<17>; // Modify PRiVilege
+        let xs: Bits<16, 15, StatusExtState>; // other eXtension State
+        let fs: Bits<14, 13, StatusExtState>; // F extension State
+        let mpp: Bits<12, 11>; // Machine Previous Privilege
+        let vs: Bits<10, 9, StatusExtState>; // V extension State
+        let spp: Bit<8>; // Supervisor Previous Privilege
+        let mpie: Bit<7>; // Machine Previous Interrupt Enable
+        let ube: Bit<6>; // User Big-Endian
+        let spie: Bit<5>; // Supervisor Previous Interrupt Enable
+        let _: Bit<4>;
+        let mie: Bit<3>; // Machine Interrupt Enable
+        let _: Bit<2>;
+        let sie: Bit<1>; // Supervisor Interrupt Enable
+        let _: Bit<0>;
+    }
+});
+
+layout!({
+    /// `mstatush`: Additional Machine Status Register.
+    #[cfg_attr(target_arch = "riscv32", csr(mstatush, ro))]
+    pub struct Mstatush(u32);
+    {
+        let _: Bits<31, 11>;
+        let mdt: Bit<10>;
+        let mpelp: Bit<9>;
+        let _: Bit<8>;
+        let mpv: Bit<7>;
+        let gva: Bit<6>;
+        let mbe: Bit<5>;
+        let sbe: Bit<4>;
+        let _: Bits<3, 0>;
+    }
+});
+
+layout!({
+    /// `mie`: Machine interrupt-enable register
+    #[csr(mie)]
+    pub struct Mie(usize);
+    {
+        let lcofie: Bit<13>; // Local Counter OverFlow Interrupt Enable
+        let meie: Bit<11>; // Machine External Interrupt Enable
+        let seie: Bit<9>; // Supervisor External Interrupt Enable
+        let mtie: Bit<7>; // Machine Timer Interrupt Enable
+        let stie: Bit<5>; // Supervisor Timer Interrupt Enable
+        let msie: Bit<3>; // Machine Software Interrupt Enable
+        let ssie: Bit<1>; // Supervisor Software Interrupt Enable
+    }
+});
+
 #[bitfield_repr(u8)]
 pub enum TrapVectorMode {
     // All traps set pc to BASE.
@@ -126,6 +218,7 @@ pub struct Mscratch(usize);
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mepc(usize);
 
+#[repr(transparent)]
 #[derive(Debug, Deref, Eq, PartialEq)]
 pub struct ExceptionCode(usize);
 
@@ -182,6 +275,7 @@ impl fmt::Display for ExceptionCode {
     }
 }
 
+#[repr(transparent)]
 #[derive(Debug, Deref, Eq, PartialEq)]
 pub struct InterruptCode(usize);
 
@@ -193,15 +287,30 @@ impl InterruptCode {
     // 4 is reserved
     pub const SUPERVISOR_TIMER_INTERRUPT: Self = Self(5);
     // 6 is reserved
-    pub const MACHINE_TIME_INTERRUPT: Self = Self(7);
+    pub const MACHINE_TIMER_INTERRUPT: Self = Self(7);
     // 8 is reserved
     pub const SUPERVISOR_EXTERNAL_INTERRUPT: Self = Self(9);
     // 10 is reserved
     pub const MACHINE_EXTERNAL_INTERRUPT: Self = Self(11);
     // 12 is reserved
-    pub const COUNTER_OVERFLOW_INTERRUPT: Self = Self(3);
+    pub const COUNTER_OVERFLOW_INTERRUPT: Self = Self(13);
     // 14-15 is reserved
     // >= 16 is designated for platform use
+}
+
+impl fmt::Display for InterruptCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Self::SUPERVISOR_SOFTWARE_INTERRUPT => write!(f, "supervisor software interrupt"),
+            Self::MACHINE_SOFTWARE_INTERRUPT => write!(f, "machine software interrupt"),
+            Self::SUPERVISOR_TIMER_INTERRUPT => write!(f, "supervisor timer interrupt"),
+            Self::MACHINE_TIMER_INTERRUPT => write!(f, "machine timer interrupt"),
+            Self::SUPERVISOR_EXTERNAL_INTERRUPT => write!(f, "supervisor external interrupt"),
+            Self::MACHINE_EXTERNAL_INTERRUPT => write!(f, "machine external interrupt"),
+            Self::COUNTER_OVERFLOW_INTERRUPT => write!(f, "counter overflow interrupt"),
+            _ => write!(f, "unknown interrupt code: {}", **self),
+        }
+    }
 }
 
 layout!({
@@ -223,11 +332,15 @@ layout!({
 });
 
 impl Mcause {
+    #[inline]
     pub fn exception_code(self) -> ExceptionCode {
+        debug_assert!(!self.interrupt());
         ExceptionCode(self.code() as usize)
     }
 
+    #[inline]
     pub fn interrupt_code(self) -> InterruptCode {
+        debug_assert!(self.interrupt());
         InterruptCode(self.code() as usize)
     }
 }
@@ -254,7 +367,7 @@ pub enum StatusExtState {
 
 layout!({
     /// `sstatus`: Supervisor Status Register.
-    #[csr(sstatus, ro)]
+    #[csr(sstatus)]
     pub struct Sstatus(usize);
     {
         #[cfg(target_pointer_width = "64")]
@@ -287,6 +400,18 @@ layout!({
         let _: Bits<4, 3>;
         let sie: Bit<1>; // Supervisor Interrupt Enable
         let _: Bit<0>;
+    }
+});
+
+layout!({
+    /// `sie`: Supervisor interrupt-enable register
+    #[csr(sie)]
+    pub struct Sie(usize);
+    {
+        let lcofie: Bit<13>; // Local Counter OverFlow Interrupt Enable
+        let seie: Bit<9>; // Supervisor External Interrupt Enable
+        let stie: Bit<5>; // Supervisor Timer Interrupt Enable
+        let ssie: Bit<1>; // Supervisor Software Interrupt Enable
     }
 });
 
@@ -335,12 +460,21 @@ layout!({
     }
 });
 
+/// `stimecmp`: Supervisor Timer Register
+#[csr(stimecmp)]
+#[derive(Clone, Copy, Debug, Deref, From)]
+pub struct Stimecmp(usize);
+
 impl Scause {
+    #[inline]
     pub fn exception_code(self) -> ExceptionCode {
+        debug_assert!(!self.interrupt());
         ExceptionCode(self.code() as usize)
     }
 
+    #[inline]
     pub fn interrupt_code(self) -> InterruptCode {
+        debug_assert!(self.interrupt());
         InterruptCode(self.code() as usize)
     }
 }

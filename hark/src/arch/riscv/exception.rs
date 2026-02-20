@@ -7,36 +7,40 @@
 use core::arch::naked_asm;
 use core::mem::offset_of;
 
-use libarch::riscv::{ExceptionCode, TrapVectorMode};
-use regio::Register;
+use libarch::riscv::{ExceptionCode, InterruptCode, TrapVectorMode};
+use regio::Register as _;
 
-use crate::arch::riscv::Regs;
+use crate::arch::riscv::{Regs, Xie, Xstatus, Xtval, Xtvec};
 use crate::kernel::panic_common;
 use crate::{print, println};
 
 cfg_if::cfg_if! {
+    if #[cfg(not(riscv_m_mode))] {
+        use libarch::riscv::Stimecmp;
+    }
+}
+
+cfg_if::cfg_if! {
     if #[cfg(riscv_m_mode)] {
-        type Xcause = libarch::riscv::Mcause;
-        type Xtval = libarch::riscv::Mtval;
-        type Xtvec = libarch::riscv::Mtvec;
-
-        macro_rules! read_xepc_into_t0 {
-            () => {
-                "csrr t0, mepc"
-            };
-        }
-
+        macro_rules! read_xcause_into_a0 { () => { "csrr a0, mcause" }; }
+        macro_rules! read_xepc_into_t0 { () => { "csrr t0, mepc" }; }
+        macro_rules! set_xie_fn { () => { |reg: &mut Xstatus| { reg.set_mie(true); } }; }
+        macro_rules! xret { () => { "mret" }; }
     } else {
-        type Xcause = libarch::riscv::Scause;
-        type Xtval = libarch::riscv::Stval;
-        type Xtvec = libarch::riscv::Stvec;
+        macro_rules! read_xcause_into_a0 { () => { "csrr a0, scause" }; }
+        macro_rules! read_xepc_into_t0 { () => { "csrr t0, sepc" }; }
+        macro_rules! set_xie_fn { () => { |reg: &mut Xstatus| { reg.set_sie(true); } }; }
+        macro_rules! xret { () => { "sret" }; }
+    }
+}
 
-        macro_rules! read_xepc_into_t0 {
-            () => {
-                "csrr t0, sepc"
-            };
-        }
-
+cfg_if::cfg_if! {
+    if #[cfg(target_pointer_width = "32")] {
+        macro_rules! store { ($args:literal) => { concat!("sw ", $args) }; }
+        macro_rules! load { ($args:literal) => { concat!("lw ", $args) }; }
+    } else {
+        macro_rules! store { ($args:literal) => { concat!("sd ", $args) }; }
+        macro_rules! load { ($args:literal) => { concat!("ld ", $args) }; }
     }
 }
 
@@ -45,65 +49,111 @@ pub(super) fn init() {
     Xtvec::from(entry) // TODO... unshifted!
         .set_mode(TrapVectorMode::Direct)
         .write();
+
+    // Enable all supported interrupts.
+    // TODO: support more!
+    Xie::from(0).set_stie(true).write();
+    Xstatus::modify(set_xie_fn!());
 }
 
 #[unsafe(no_mangle)]
 #[unsafe(naked)]
 extern "C" fn exception_entry() {
     naked_asm!(
-        r#"
         // We save registers onto the stack, making sure not to trash any before
         // we do.
         //
         // Save pc for later, when we have a spare register for reading in xepc.
-        addi sp, sp, -{sizeof_regs}
-        sw ra, {ra_offset}(sp)
+        "  addi sp, sp, -{sizeof_regs}",
+        store!("ra, {ra_offset}(sp)"),
         // We've just modified sp, so defer recording the original as well.
-        sw gp, {gp_offset}(sp)
-        sw tp, {tp_offset}(sp)
-        sw t0, {t0_offset}(sp)
-        sw t1, {t1_offset}(sp)
-        sw t2, {t2_offset}(sp)
-        sw s0, {s0_offset}(sp)
-        sw s1, {s1_offset}(sp)
-        sw a0, {a0_offset}(sp)
-        sw a1, {a1_offset}(sp)
-        sw a2, {a2_offset}(sp)
-        sw a3, {a3_offset}(sp)
-        sw a4, {a4_offset}(sp)
-        sw a5, {a5_offset}(sp)
-        sw a6, {a6_offset}(sp)
-        sw a7, {a7_offset}(sp)
-        sw s2, {s2_offset}(sp)
-        sw s3, {s3_offset}(sp)
-        sw s4, {s4_offset}(sp)
-        sw s5, {s5_offset}(sp)
-        sw s6, {s6_offset}(sp)
-        sw s7, {s7_offset}(sp)
-        sw s8, {s8_offset}(sp)
-        sw s9, {s9_offset}(sp)
-        sw s10, {s10_offset}(sp)
-        sw s11, {s11_offset}(sp)
-        sw t3, {t3_offset}(sp)
-        sw t4, {t4_offset}(sp)
-        sw t5, {t5_offset}(sp)
-        sw t6, {t6_offset}(sp)
-
+        store!("gp, {gp_offset}(sp)"),
+        store!("tp, {tp_offset}(sp)"),
+        store!("t0, {t0_offset}(sp)"),
+        store!("t1, {t1_offset}(sp)"),
+        store!("t2, {t2_offset}(sp)"),
+        store!("s0, {s0_offset}(sp)"),
+        store!("s1, {s1_offset}(sp)"),
+        store!("a0, {a0_offset}(sp)"),
+        store!("a1, {a1_offset}(sp)"),
+        store!("a2, {a2_offset}(sp)"),
+        store!("a3, {a3_offset}(sp)"),
+        store!("a4, {a4_offset}(sp)"),
+        store!("a5, {a5_offset}(sp)"),
+        store!("a6, {a6_offset}(sp)"),
+        store!("a7, {a7_offset}(sp)"),
+        store!("s2, {s2_offset}(sp)"),
+        store!("s3, {s3_offset}(sp)"),
+        store!("s4, {s4_offset}(sp)"),
+        store!("s5, {s5_offset}(sp)"),
+        store!("s6, {s6_offset}(sp)"),
+        store!("s7, {s7_offset}(sp)"),
+        store!("s8, {s8_offset}(sp)"),
+        store!("s9, {s9_offset}(sp)"),
+        store!("s10, {s10_offset}(sp)"),
+        store!("s11, {s11_offset}(sp)"),
+        store!("t3, {t3_offset}(sp)"),
+        store!("t4, {t4_offset}(sp)"),
+        store!("t5, {t5_offset}(sp)"),
+        store!("t6, {t6_offset}(sp)"),
         // With t0 freed up, we can recover the original sp value and store
         // that.
-        addi t0, sp, {sizeof_regs}
-        sw t0, {sp_offset}(sp)
-        "#,
+        "  addi t0, sp, {sizeof_regs}",
+        store!("t0, {sp_offset}(sp)"),
         read_xepc_into_t0!(),
-        r#"
-        sw t0, {pc_offset}(sp)
-
+        store!("t0, {pc_offset}(sp)"),
         // Now we have a Regs struct that we can pass to handle_exception.
-        mv a0, sp
+        "  mv a1, sp",
+        // Before calling into Rust code we zero the frame pointerπ
+        read_xcause_into_a0!(),
+        // If the most-significant bit is set, then this is an interrupt. We can
+        // test for this by seeing if the number is "less than zero". In that
+        // case, we can also clear the top bit (to get the underlying interrupt
+        // code) by shifting left and then shifting right.
+        r#"
+          bltz a0, .Linterrupt
+          j handle_exception
 
-        // All registers recorded! Back to Rust...
-        j handle_exception
+        .Linterrupt:
+          slli a0, a0, 1
+          srli a0, a0, 1
+          call handle_interrupt
         "#,
+        load!("ra, {ra_offset}(sp)"),
+        // We restore sp last, since everything else depends on the current
+        // sp value.
+        load!("gp, {gp_offset}(sp)"),
+        load!("tp, {tp_offset}(sp)"),
+        load!("t0, {t0_offset}(sp)"),
+        load!("t1, {t1_offset}(sp)"),
+        load!("t2, {t2_offset}(sp)"),
+        load!("s0, {s0_offset}(sp)"),
+        load!("s1, {s1_offset}(sp)"),
+        load!("a0, {a0_offset}(sp)"),
+        load!("a1, {a1_offset}(sp)"),
+        load!("a2, {a2_offset}(sp)"),
+        load!("a3, {a3_offset}(sp)"),
+        load!("a4, {a4_offset}(sp)"),
+        load!("a5, {a5_offset}(sp)"),
+        load!("a6, {a6_offset}(sp)"),
+        load!("a7, {a7_offset}(sp)"),
+        load!("s2, {s2_offset}(sp)"),
+        load!("s3, {s3_offset}(sp)"),
+        load!("s4, {s4_offset}(sp)"),
+        load!("s5, {s5_offset}(sp)"),
+        load!("s6, {s6_offset}(sp)"),
+        load!("s7, {s7_offset}(sp)"),
+        load!("s8, {s8_offset}(sp)"),
+        load!("s9, {s9_offset}(sp)"),
+        load!("s10, {s10_offset}(sp)"),
+        load!("s11, {s11_offset}(sp)"),
+        load!("t3, {t3_offset}(sp)"),
+        load!("t4, {t4_offset}(sp)"),
+        load!("t5, {t5_offset}(sp)"),
+        load!("t6, {t6_offset}(sp)"),
+        // Restore sp last, deallocating the registers.
+        load!("sp, {sp_offset}(sp)"),
+        xret!(),
         sizeof_regs = const size_of::<Regs>(),
         pc_offset = const offset_of!(Regs, pc),
         ra_offset = const offset_of!(Regs, ra),
@@ -141,11 +191,11 @@ extern "C" fn exception_entry() {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn handle_exception(regs: &Regs) -> ! {
+extern "C" fn handle_exception(code: ExceptionCode, regs: &Regs) -> ! {
     panic_common(regs.s0, Some(regs.pc), || {
         let xtval = *Xtval::read();
-        print!("Exception: {}", Xcause::read().exception_code());
-        match Xcause::read().exception_code() {
+        print!("Exception: {code}");
+        match code {
             // In these cases xtval holds the associated address.
             ExceptionCode::INSTRUCTION_ADDRESS_MISALIGNED
             | ExceptionCode::INSTRUCTION_ACCESS_FAULT
@@ -159,7 +209,9 @@ extern "C" fn handle_exception(regs: &Regs) -> ! {
                 println!(" (@ {xtval:#x})");
             }
             _ => {
-                if xtval != 0 {
+                if xtval == 0 {
+                    print!("\n");
+                } else {
                     println!(" ({xtval:#x})");
                 }
             }
@@ -167,4 +219,17 @@ extern "C" fn handle_exception(regs: &Regs) -> ! {
 
         println!("Registers:\n{}", regs);
     });
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn handle_interrupt(code: InterruptCode) {
+    match code {
+        #[cfg(not(riscv_m_mode))]
+        InterruptCode::SUPERVISOR_TIMER_INTERRUPT => {
+            // TODO: no magic numbers and this should be downstream of a more
+            // general policy.
+            Stimecmp::from(*libarch::riscv::Time::read() + 50_000_000).write();
+        }
+        _ => panic!("Unexpected interrupt: {code}"),
+    }
 }
