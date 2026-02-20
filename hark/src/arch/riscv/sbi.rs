@@ -6,7 +6,7 @@
 
 use core::fmt;
 
-use libarch::riscv::{SbiError, sbi_debug_console_write};
+use libarch::riscv::sbi;
 
 use crate::platform::Console;
 
@@ -21,9 +21,9 @@ impl Console for SbiConsole {
     fn write(&self, bytes: &[u8]) {
         let mut remaining = bytes.len();
         while remaining > 0 {
-            match sbi_debug_console_write(bytes) {
+            match sbi::debug_console_write(bytes) {
                 Ok(written) => remaining -= written,
-                Err(SbiError::DENIED) => break,
+                Err(sbi::Error::DENIED) => break,
                 _ => {}
             }
         }

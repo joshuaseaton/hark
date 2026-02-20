@@ -15,9 +15,9 @@ use bitfld::layout;
 /// Represents an SBI call error.
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct SbiError(NonZeroIsize);
+pub struct Error(NonZeroIsize);
 
-impl SbiError {
+impl Error {
     /// `SBI_ERR_FAILED`
     pub const FAILED: Self = Self(NonZeroIsize::new(-1).unwrap());
     /// `SBI_ERR_NOT_SUPPORTED`
@@ -36,25 +36,25 @@ impl SbiError {
     pub const ALREADY_STOPPED: Self = Self(NonZeroIsize::new(-8).unwrap());
 }
 
-impl fmt::Display for SbiError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            SbiError::FAILED => write!(f, "failed"),
-            SbiError::NOT_SUPPORTED => write!(f, "not supported"),
-            SbiError::INVALID_PARAM => write!(f, "invalid parameter"),
-            SbiError::DENIED => write!(f, "denied"),
-            SbiError::INVALID_ADDRESS => write!(f, "invalid address"),
-            SbiError::ALREADY_AVAILABLE => write!(f, "already available"),
-            SbiError::ALREADY_STARTED => write!(f, "already started"),
-            SbiError::ALREADY_STOPPED => write!(f, "already stopped"),
+            Error::FAILED => write!(f, "failed"),
+            Error::NOT_SUPPORTED => write!(f, "not supported"),
+            Error::INVALID_PARAM => write!(f, "invalid parameter"),
+            Error::DENIED => write!(f, "denied"),
+            Error::INVALID_ADDRESS => write!(f, "invalid address"),
+            Error::ALREADY_AVAILABLE => write!(f, "already available"),
+            Error::ALREADY_STARTED => write!(f, "already started"),
+            Error::ALREADY_STOPPED => write!(f, "already stopped"),
             _ => write!(f, "unknown SBI error ({:#x})", self.get()),
         }
     }
 }
 
-impl error::Error for SbiError {}
+impl error::Error for Error {}
 
-impl Deref for SbiError {
+impl Deref for Error {
     type Target = NonZeroIsize;
 
     /// Returns the underlying error code.
@@ -64,9 +64,9 @@ impl Deref for SbiError {
 }
 
 /// Represents an SBI implementation ID.
-pub struct SbiImplementationId(usize);
+pub struct ImplementationId(usize);
 
-impl SbiImplementationId {
+impl ImplementationId {
     pub const BERKELEY_BOOT_LOADER: usize = 0;
     pub const OPEN_SBI: usize = 1;
     pub const XVISOR: usize = 2;
@@ -76,7 +76,7 @@ impl SbiImplementationId {
     pub const COFFER: usize = 6;
 }
 
-impl Deref for SbiImplementationId {
+impl Deref for ImplementationId {
     type Target = usize;
 
     /// Returns the underlying implementation ID value.
@@ -85,17 +85,17 @@ impl Deref for SbiImplementationId {
     }
 }
 
-impl fmt::Display for SbiImplementationId {
+impl fmt::Display for ImplementationId {
     /// Gives the name of the implementer if known.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match **self {
-            SbiImplementationId::BERKELEY_BOOT_LOADER => write!(f, "Berkeley Boot Loader (BBL)"),
-            SbiImplementationId::OPEN_SBI => write!(f, "OpenSBI"),
-            SbiImplementationId::XVISOR => write!(f, "Xvisor"),
-            SbiImplementationId::KVM => write!(f, "KVM"),
-            SbiImplementationId::RUST_SBI => write!(f, "Rust SBI"),
-            SbiImplementationId::DIOSIX => write!(f, "Diosix"),
-            SbiImplementationId::COFFER => write!(f, "Coffer"),
+            ImplementationId::BERKELEY_BOOT_LOADER => write!(f, "Berkeley Boot Loader (BBL)"),
+            ImplementationId::OPEN_SBI => write!(f, "OpenSBI"),
+            ImplementationId::XVISOR => write!(f, "Xvisor"),
+            ImplementationId::KVM => write!(f, "KVM"),
+            ImplementationId::RUST_SBI => write!(f, "Rust SBI"),
+            ImplementationId::DIOSIX => write!(f, "Diosix"),
+            ImplementationId::COFFER => write!(f, "Coffer"),
             other => write!(f, "unknown SBI implementation ({other:#x}"),
         }
     }
@@ -103,7 +103,7 @@ impl fmt::Display for SbiImplementationId {
 
 layout!({
     /// Represents an SBI specification version.
-    pub struct SbiSpecificationVersion(u32);
+    pub struct SpecificationVersion(u32);
     {
         let _: Bit<31> = 0;
         let major: Bits<30, 24>;
@@ -111,18 +111,18 @@ layout!({
     }
 });
 
-impl fmt::Display for SbiSpecificationVersion {
+impl fmt::Display for SpecificationVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}.{}", self.major(), self.minor())
     }
 }
 
-// A separate helper macro for sbi_call!() internals so that no internal arms
+// A separate helper macro for call!() internals so that no internal arms
 // are documented by rustdoc.
 #[doc(hidden)]
 #[macro_export]
 #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))]
-macro_rules! sbi_call_internal {
+macro_rules! call_internal {
     (@asm $eid:expr, $fid:expr, $error:ident, $value:ident) => {
         #[allow(clippy::macro_metavars_in_unsafe)]
         unsafe {
@@ -168,23 +168,26 @@ macro_rules! sbi_call_internal {
 /// Makes an SBI call with a variadic number of arguments (up to 6), returning
 /// the value if successful:
 /// ```text
-/// sbi_call!(eid: i32, fid: i32 [, arg: usize, ...]) -> Result<usize, SbiError>
+/// sbi::call!(eid: i32, fid: i32 [, arg: usize, ...]) -> Result<usize, sbi::Error>
 /// ```
 #[doc(hidden)] // Re-exported in riscv module
 #[macro_export]
 #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))]
-macro_rules! sbi_call {
+macro_rules! call {
     ($eid:expr, $fid:expr $(, $($args:expr),*)?) => {{
         let error: isize;
         let value: isize;
-        sbi_call_internal!(@asm $eid, $fid, error, value $($(, $args)*)?);
+        call_internal!(@asm $eid, $fid, error, value $($(, $args)*)?);
         if let Some(error) = NonZeroIsize::new(error) {
-            Err(SbiError(error))
+            Err(Error(error))
         } else {
             Ok(value.cast_unsigned())
         }
     }};
 }
+
+#[doc(inline)]
+pub use crate::call;
 
 cfg_if::cfg_if! {
     if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
@@ -195,11 +198,11 @@ cfg_if::cfg_if! {
         const EID_BASE_EXTENSION: i32 = 0x10;
 
         /// Returns the SBI specification version.
-        pub fn sbi_get_spec_version() -> SbiSpecificationVersion {
-            let value = sbi_call!(EID_BASE_EXTENSION, 0)
-                .expect("sbi_get_spec_version() failed, contrary to the spec");
+        pub fn get_spec_version() -> SpecificationVersion {
+            let value = call!(EID_BASE_EXTENSION, 0)
+                .expect("sbi::get_spec_version() failed, contrary to the spec");
             #[allow(clippy::cast_possible_truncation)]
-            SbiSpecificationVersion::from(value as u32)
+            SpecificationVersion::from(value as u32)
         }
 
         /// Returns the SBI implementation ID.
@@ -207,9 +210,9 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_get_impl_id() -> Result<SbiImplementationId, SbiError> {
-            let value = sbi_call!(EID_BASE_EXTENSION, 1)?;
-            Ok(SbiImplementationId(value))
+        pub fn get_impl_id() -> Result<ImplementationId, Error> {
+            let value = call!(EID_BASE_EXTENSION, 1)?;
+            Ok(ImplementationId(value))
         }
 
         /// Returns the SBI implementation version.
@@ -217,8 +220,8 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_get_impl_version() -> Result<usize, SbiError> {
-            sbi_call!(EID_BASE_EXTENSION, 2)
+        pub fn get_impl_version() -> Result<usize, Error> {
+            call!(EID_BASE_EXTENSION, 2)
         }
 
         /// Returns whether a given SBI extension is available.
@@ -226,8 +229,8 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_probe_extension(eid: i32) -> Result<bool, SbiError> {
-            sbi_call!(EID_BASE_EXTENSION, 3, eid.cast_unsigned() as usize).map(|value| value > 0)
+        pub fn probe_extension(eid: i32) -> Result<bool, Error> {
+            call!(EID_BASE_EXTENSION, 3, eid.cast_unsigned() as usize).map(|value| value > 0)
         }
 
         /// Returns the machine vendor ID.
@@ -235,8 +238,8 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_get_mvendorid() -> Result<usize, SbiError> {
-            sbi_call!(EID_BASE_EXTENSION, 4)
+        pub fn get_mvendorid() -> Result<usize, Error> {
+            call!(EID_BASE_EXTENSION, 4)
         }
 
         /// Returns the machine architecture ID.
@@ -244,8 +247,8 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_get_marchid() -> Result<usize, SbiError> {
-            sbi_call!(EID_BASE_EXTENSION, 5)
+        pub fn get_marchid() -> Result<usize, Error> {
+            call!(EID_BASE_EXTENSION, 5)
         }
 
         /// Returns the machine implementation ID.
@@ -253,8 +256,8 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_get_mimpid() -> Result<usize, SbiError> {
-            sbi_call!(EID_BASE_EXTENSION, 6)
+        pub fn get_mimpid() -> Result<usize, Error> {
+            call!(EID_BASE_EXTENSION, 6)
         }
 
         //
@@ -269,10 +272,10 @@ cfg_if::cfg_if! {
         ///
         /// # Errors
         ///
-        /// * `SbiError::DENIED`: Writes to the debug console are not allowed
-        /// * `SbiError::FAILED`: Failed to write due to I/O errors
-        pub fn sbi_debug_console_write(bytes: &[u8]) -> Result<usize, SbiError> {
-            sbi_call!(
+        /// * [`Error::DENIED`]: Writes to the debug console are not allowed
+        /// * [`Error::FAILED`]: Failed to write due to I/O errors
+        pub fn debug_console_write(bytes: &[u8]) -> Result<usize, Error> {
+            call!(
                 EID_DBCN_EXTENSION,
                 0,
                 bytes.len(),
@@ -285,10 +288,10 @@ cfg_if::cfg_if! {
         ///
         /// # Errors
         ///
-        /// * `SbiError::DENIED`: Reads to the debug console are not allowed.
-        /// * `SbiError::FAILED`: Failed to read due to I/O errors
-        pub fn sbi_debug_console_read(bytes: &mut [u8]) -> Result<usize, SbiError> {
-            sbi_call!(
+        /// * [`Error::DENIED`]: Reads to the debug console are not allowed.
+        /// * [`Error::FAILED`]: Failed to read due to I/O errors
+        pub fn debug_console_read(bytes: &mut [u8]) -> Result<usize, Error> {
+            call!(
                 EID_DBCN_EXTENSION,
                 1,
                 bytes.len(),
@@ -301,10 +304,10 @@ cfg_if::cfg_if! {
         ///
         /// # Errors
         ///
-        /// * `SbiError::DENIED`: Writes to the debug console are not allowed
-        /// * `SbiError::FAILED`: Failed to write due to I/O errors
-        pub fn sbi_debug_console_write_byte(byte: u8) -> Result<(), SbiError> {
-            sbi_call!(EID_DBCN_EXTENSION, 2, byte).map(|_| ())
+        /// * [`Error::DENIED`]: Writes to the debug console are not allowed
+        /// * [`Error::FAILED`]: Failed to write due to I/O errors
+        pub fn debug_console_write_byte(byte: u8) -> Result<(), Error> {
+            call!(EID_DBCN_EXTENSION, 2, byte).map(|_| ())
         }
 
         const EID_TIME_EXTENSION: i32 = 0x5449_4d45;
@@ -314,13 +317,13 @@ cfg_if::cfg_if! {
         /// # Errors
         ///
         /// Undocumented.
-        pub fn sbi_set_timer(stime_value: u64) -> Result<(), SbiError> {
+        pub fn set_timer(stime_value: u64) -> Result<(), Error> {
             if cfg!(target_arch = "riscv32") {
                 let lo = stime_value as usize;
                 let hi = (stime_value >> 32) as usize;
-                sbi_call!(EID_TIME_EXTENSION, 0, lo, hi).map(|_| ())
+                call!(EID_TIME_EXTENSION, 0, lo, hi).map(|_| ())
             } else {
-                sbi_call!(EID_TIME_EXTENSION, 0, stime_value as usize).map(|_| ())
+                call!(EID_TIME_EXTENSION, 0, stime_value as usize).map(|_| ())
             }
         }
     }

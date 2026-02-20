@@ -7,14 +7,11 @@
 /// Control and Status Registers
 pub mod csr;
 
-mod sbi;
-pub use sbi::*;
+/// Supervisor Binary Interface
+pub mod sbi;
 
 cfg_if::cfg_if! {
     if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
-        #[doc(inline)]
-        pub use crate::sbi_call;
-
         use core::{arch::asm, ptr};
 
         use crate::{CallFrame, ArchCommon};
