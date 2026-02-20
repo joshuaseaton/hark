@@ -9,6 +9,7 @@ use core::fmt;
 use core::marker::PhantomData;
 
 use bitfld::{bitfield_repr, layout};
+use derive_more::{Deref, From};
 use regio::{IoBackend, Mmio, Offset, Register as _, offset};
 
 use crate::dev::uart::DriverBase;
@@ -20,22 +21,16 @@ const APERTURE_SIZE: usize = 8;
 
 // When DLAB = 0, a read from the first register yields a received byte (or
 // garbage if no data has been received).
-layout! {{
-    #[offset(0, ro)]
-    struct RxBufferRegister(u8);
-    {
-        let data: Bits<7, 0>;
-    }
-}}
+#[offset(0, ro)]
+#[repr(transparent)]
+#[derive(Debug, Deref, From)]
+struct RxBufferRegister(u8);
 
 // When DLAB = 0, a write to the first register transmits the data.
-layout! {{
-    #[offset(0, wo)]
-    struct TxBufferRegister(u8);
-    {
-        let data: Bits<7, 0>;
-    }
-}}
+#[offset(0, wo)]
+#[repr(transparent)]
+#[derive(Debug, Deref, From)]
+struct TxBufferRegister(u8);
 
 // When DLAB = 0.
 layout! {{
@@ -51,22 +46,16 @@ layout! {{
 }}
 
 // When DLAB = 1.
-layout! {{
-    #[offset(0)]
-    struct DivisorLatchLowerRegister(u8);
-    {
-        let data: Bits<7, 0>;
-    }
-}}
+#[offset(0)]
+#[repr(transparent)]
+#[derive(Debug, Deref, From)]
+struct DivisorLatchLowerRegister(u8);
 
 // When DLAB = 1.
-layout! {{
-    #[offset(1)]
-    struct DivisorLatchUpperRegister(u8);
-    {
-        let data: Bits<7, 0>;
-    }
-}}
+#[offset(1)]
+#[repr(transparent)]
+#[derive(Debug, Deref, From)]
+struct DivisorLatchUpperRegister(u8);
 
 layout! {{
     #[offset(2)]
