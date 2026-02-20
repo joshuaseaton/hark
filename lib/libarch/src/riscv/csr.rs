@@ -16,11 +16,13 @@ use regio::riscv::csr;
 
 /// `time`: Timer for RDTIME instruction.
 #[csr(time, ro)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Time(usize);
 
 /// `timeh`: Upper 32 bits of `time` (RV32 only).
 #[cfg_attr(target_arch = "riscv32", csr(timeh, ro))]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Timeh(u32);
 
@@ -118,11 +120,13 @@ layout!({
 
 /// `sscratch`: Supervisor Scratch Register
 #[csr(sscratch)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Sscratch(usize);
 
 /// `sepc`: Supervisor Exception Program Counter Register
 #[csr(sepc)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Sepc(usize);
 
@@ -262,6 +266,7 @@ impl Scause {
 
 /// `stval`: Supervisor Trap Value Register
 #[csr(stval)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Stval(usize);
 
@@ -271,6 +276,7 @@ pub struct Stval(usize);
 
 /// `stimecmp`: Supervisor Timer Register
 #[csr(stimecmp)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Stimecmp(usize);
 
@@ -290,16 +296,19 @@ layout!({
 
 /// `marchid`: Machine Architecture ID Register.
 #[csr(marchid, ro)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Marchid(usize);
 
 /// `mimpid`: Machine Implementation ID Register.
 #[csr(mimpid, ro)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mimpid(usize);
 
 /// `mhartid`: Hart ID Register
 #[csr(mhartid, ro)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mhartid(usize);
 
@@ -454,11 +463,13 @@ layout!({
 
 /// `mscratch`: Machine Scratch Register
 #[csr(mscratch)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mscratch(usize);
 
 /// `mepc`: Machine Exception Program Counter Register
 #[csr(mepc)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mepc(usize);
 
@@ -496,5 +507,6 @@ impl Mcause {
 
 /// `mtval`: Machine Trap Value Register
 #[csr(mtval)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Deref, From)]
 pub struct Mtval(usize);
