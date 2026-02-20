@@ -306,5 +306,22 @@ cfg_if::cfg_if! {
         pub fn sbi_debug_console_write_byte(byte: u8) -> Result<(), SbiError> {
             sbi_call!(EID_DBCN_EXTENSION, 2, byte).map(|_| ())
         }
+
+        const EID_TIME_EXTENSION: i32 = 0x5449_4d45;
+
+        /// Sets a timer interrupt to fire at an absolute time.
+        ///
+        /// # Errors
+        ///
+        /// Undocumented.
+        pub fn sbi_set_timer(stime_value: u64) -> Result<(), SbiError> {
+            if cfg!(target_arch = "riscv32") {
+                let lo = stime_value as usize;
+                let hi = (stime_value >> 32) as usize;
+                sbi_call!(EID_TIME_EXTENSION, 0, lo, hi).map(|_| ())
+            } else {
+                sbi_call!(EID_TIME_EXTENSION, 0, stime_value as usize).map(|_| ())
+            }
+        }
     }
 }
