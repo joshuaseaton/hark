@@ -7,7 +7,7 @@
 use core::arch::naked_asm;
 use core::mem::offset_of;
 
-use libarch::riscv::{ExceptionCode, InterruptCode, TrapVectorMode};
+use libarch::riscv::csr::{ExceptionCode, InterruptCode, TrapVectorMode};
 use regio::Register as _;
 
 use crate::arch::riscv::{Regs, Xie, Xstatus, Xtval, Xtvec};
@@ -16,7 +16,7 @@ use crate::{print, println};
 
 cfg_if::cfg_if! {
     if #[cfg(not(riscv_m_mode))] {
-        use libarch::riscv::Stimecmp;
+        use libarch::riscv::csr::Stimecmp;
     }
 }
 
@@ -228,7 +228,7 @@ extern "C" fn handle_interrupt(code: InterruptCode) {
         InterruptCode::SUPERVISOR_TIMER_INTERRUPT => {
             // TODO: no magic numbers and this should be downstream of a more
             // general policy.
-            Stimecmp::from(*libarch::riscv::Time::read() + 50_000_000).write();
+            Stimecmp::from(*libarch::riscv::csr::Time::read() + 50_000_000).write();
         }
         _ => panic!("Unexpected interrupt: {code}"),
     }

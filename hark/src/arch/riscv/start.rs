@@ -7,7 +7,7 @@
 use core::arch::{global_asm, naked_asm};
 
 #[cfg(not(riscv_m_mode))]
-use libarch::riscv::Sstatus;
+use libarch::riscv::csr::Sstatus;
 
 const STACK_SIZE: u64 = 0x2000; // 8KiB
 

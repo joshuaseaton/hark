@@ -25,24 +25,24 @@ use regio::Register as _;
 
 cfg_if::cfg_if! {
     if #[cfg(riscv_m_mode)] {
-        use libarch::riscv::{Marchid, Mhartid, Misa, Mvendorid, Mimpid};
+        use libarch::riscv::csr::{Marchid, Mhartid, Misa, Mvendorid, Mimpid};
         use crate::print;
     }
 }
 
 cfg_if::cfg_if! {
     if #[cfg(riscv_m_mode)] {
-        type Xie = libarch::riscv::Mie;
-        type Xscratch = libarch::riscv::Mscratch;
-        type Xstatus = libarch::riscv::Mstatus;
-        type Xtval = libarch::riscv::Mtval;
-        type Xtvec = libarch::riscv::Mtvec;
+        type Xie = libarch::riscv::csr::Mie;
+        type Xscratch = libarch::riscv::csr::Mscratch;
+        type Xstatus = libarch::riscv::csr::Mstatus;
+        type Xtval = libarch::riscv::csr::Mtval;
+        type Xtvec = libarch::riscv::csr::Mtvec;
     } else {
-        type Xie = libarch::riscv::Sie;
-        type Xscratch = libarch::riscv::Sscratch;
-        type Xstatus = libarch::riscv::Sstatus;
-        type Xtval = libarch::riscv::Stval;
-        type Xtvec = libarch::riscv::Stvec;
+        type Xie = libarch::riscv::csr::Sie;
+        type Xscratch = libarch::riscv::csr::Sscratch;
+        type Xstatus = libarch::riscv::csr::Sstatus;
+        type Xtval = libarch::riscv::csr::Stval;
+        type Xtvec = libarch::riscv::csr::Stvec;
     }
 }
 
