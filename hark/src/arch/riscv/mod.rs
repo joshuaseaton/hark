@@ -18,7 +18,6 @@ use start::BOOT_HART_ID;
 
 use core::{fmt, mem, ptr};
 
-use crate::arch::ArchCommon;
 use crate::println;
 
 use regio::Register as _;
@@ -142,46 +141,42 @@ pub(super) fn get_percpu() -> &'static PerCpu {
     unsafe { &*&raw const PERCPU[0] }
 }
 
-pub(super) struct Arch {}
+#[inline]
+pub fn init() {
+    let percpu = get_percpu();
+    Xscratch::from(ptr::from_ref(percpu).addr()).write();
+    exception::init();
+}
 
-impl ArchCommon for Arch {
-    #[inline]
-    fn init() {
-        let percpu = get_percpu();
-        Xscratch::from(ptr::from_ref(percpu).addr()).write();
-        exception::init();
-    }
-
-    #[inline]
-    #[cfg(riscv_m_mode)]
-    fn print_machine_context() {
-        println!("Entry mode: M");
-        println!("Boot hart ID: {:#}", *Mhartid::read());
-        println!(
-            "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
-            *Mvendorid::read(),
-            *Marchid::read(),
-            *Mimpid::read()
-        );
-        print!("misa: ");
-        let mut first = true;
-        for (metadata, value) in Misa::read().iter().rev() {
-            if value == 0 {
-                continue;
-            }
-            if !first {
-                print!(",");
-            }
-            print!("{}", metadata.name);
-            first = false;
+#[inline]
+#[cfg(riscv_m_mode)]
+pub fn print_machine_context() {
+    println!("Entry mode: M");
+    println!("Boot hart ID: {:#}", *Mhartid::read());
+    println!(
+        "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
+        *Mvendorid::read(),
+        *Marchid::read(),
+        *Mimpid::read()
+    );
+    print!("misa: ");
+    let mut first = true;
+    for (metadata, value) in Misa::read().iter().rev() {
+        if value == 0 {
+            continue;
         }
-        print!("\n");
+        if !first {
+            print!(",");
+        }
+        print!("{}", metadata.name);
+        first = false;
     }
+    print!("\n");
+}
 
-    #[inline]
-    #[cfg(not(riscv_m_mode))]
-    fn print_machine_context() {
-        println!("Entry mode: S");
-        println!("Boot hart ID: {BOOT_HART_ID:#}");
-    }
+#[inline]
+#[cfg(not(riscv_m_mode))]
+pub fn print_machine_context() {
+    println!("Entry mode: S");
+    println!("Boot hart ID: {BOOT_HART_ID:#}");
 }

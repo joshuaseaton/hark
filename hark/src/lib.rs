@@ -35,7 +35,7 @@ pub struct Stdout {}
 
 impl fmt::Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        platform::console_write(s.as_bytes());
+        platform::console::write(s.as_bytes());
         Ok(())
     }
 }
@@ -61,7 +61,7 @@ macro_rules! println {
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
-    platform::console_init();
+    platform::console::init();
     print_welcome();
     print_version();
 
@@ -105,6 +105,6 @@ fn print_build_id() {
 #[inline(never)]
 fn print_console_info() {
     print!("Console: ");
-    platform::console_describe(&mut Stdout {});
+    platform::console::describe(&mut Stdout {});
     print!("\n");
 }

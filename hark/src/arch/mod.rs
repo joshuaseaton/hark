@@ -5,23 +5,18 @@
 // https://opensource.org/licenses/MIT
 
 cfg_if::cfg_if! {
-   if  #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
-        pub mod riscv;
-        use riscv::Arch;
-   }
-}
-
-trait ArchCommon {
-    fn init();
-    fn print_machine_context();
+    if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+        pub(crate) mod riscv;
+        use riscv as backend;
+    }
 }
 
 pub(crate) fn init() {
-    Arch::init();
+    backend::init();
 }
 
 // Prints generic machine context, as enumerated from the CPU.
 #[inline(never)]
 pub(crate) fn print_machine_context() {
-    Arch::print_machine_context();
+    backend::print_machine_context();
 }

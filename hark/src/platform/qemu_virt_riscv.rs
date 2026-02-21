@@ -5,55 +5,44 @@
 // https://opensource.org/licenses/MIT
 
 use crate::dev::sifive_test;
-use crate::platform::Platform;
+
+#[cfg(not(any(target_arch = "riscv32", target_arch = "riscv64")))]
+compile_error!("qemu-virt-riscv is only defined for RISC-V");
 
 #[cfg(all(riscv_sbi_console, riscv_m_mode))]
 compile_error!("Can't use an SBI console in M mode");
 
 cfg_if::cfg_if! {
     if #[cfg(riscv_sbi_console)] {
-        use crate::arch::riscv::SbiConsole;
+        use crate::arch::riscv::SbiDebugConsole;
+
+        pub type Console = SbiDebugConsole;
+
+        #[inline]
+        pub fn console() -> Console { SbiDebugConsole{}}
     } else {
         use crate::dev::uart;
 
         const UART_ADDR: usize = 0x1000_0000;
+
+        pub type Console = uart::Ns8250;
+
+        #[inline]
+        pub fn console() -> Console { uart::Ns8250::new(UART_ADDR) }
     }
 }
 
-pub(super) struct Impl {}
+#[inline]
+pub fn shutdown() -> ! {
+    sifive_test::shutdown()
+}
 
-impl Platform for Impl {
-    cfg_if::cfg_if! {
-        if #[cfg(riscv_sbi_console)] {
-            type Console = SbiConsole;
-        } else {
-            type Console = uart::Ns8250;
-        }
-    }
+#[inline]
+pub fn halt() -> ! {
+    sifive_test::panic()
+}
 
-    #[inline]
-    fn console() -> Self::Console {
-        cfg_if::cfg_if! {
-            if #[cfg(riscv_sbi_console)] {
-                SbiConsole{}
-            } else {
-                uart::Ns8250::new(UART_ADDR)
-            }
-        }
-    }
-
-    #[inline]
-    fn shutdown() -> ! {
-        sifive_test::shutdown()
-    }
-
-    #[inline]
-    fn halt() -> ! {
-        sifive_test::panic()
-    }
-
-    #[inline]
-    fn reboot() -> ! {
-        sifive_test::reset();
-    }
+#[inline]
+pub fn reboot() -> ! {
+    sifive_test::reset();
 }

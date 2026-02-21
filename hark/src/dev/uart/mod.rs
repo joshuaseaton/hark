@@ -10,6 +10,8 @@ use core::fmt;
 
 use regio::{IoBackend, Mmio};
 
+use crate::platform::Console;
+
 pub type Ns8250 = Driver<ns8250::Base<Mmio<u8>>>;
 
 pub trait DriverBase {
@@ -32,9 +34,6 @@ pub struct Driver<Base: DriverBase> {
 }
 
 impl<Base: DriverBase> Driver<Base> {
-    pub fn describe(&self, w: &mut impl fmt::Write) {
-        Base::describe(w, &self.state);
-    }
     // Creates an initialized UART object over an MMIO aperture.
     pub fn new(base: usize) -> Self {
         let io = Base::io(base);
@@ -42,9 +41,17 @@ impl<Base: DriverBase> Driver<Base> {
         Base::init(&io, &mut state);
         Self { io, state }
     }
+}
+
+impl<Base: DriverBase> Console for Driver<Base> {
+    #[inline]
+    fn describe(&self, w: &mut impl fmt::Write) {
+        Base::describe(w, &self.state);
+    }
 
     // Writes the provided bytes to the UART.
-    pub fn write(&self, mut bytes: &[u8]) {
+    #[inline]
+    fn write(&self, mut bytes: &[u8]) {
         while !bytes.is_empty() {
             while !Base::tx_ready(&self.io) {}
             bytes = Base::write(&self.io, &self.state, bytes);

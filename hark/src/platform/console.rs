@@ -7,35 +7,29 @@
 use core::fmt;
 use core::mem::MaybeUninit;
 
-use crate::dev::uart;
-use crate::platform::{Impl, Platform};
+use crate::platform::{Console, backend};
 
-type PlatformConsole = <Impl as Platform>::Console;
-static mut CONSOLE: MaybeUninit<PlatformConsole> = MaybeUninit::uninit();
+static mut CONSOLE: MaybeUninit<backend::Console> = MaybeUninit::uninit();
 
-pub(super) fn set_console(console: PlatformConsole) {
+pub(super) fn set_console(console: backend::Console) {
     unsafe {
         (*&raw mut CONSOLE).write(console);
     }
 }
 
-pub(super) fn get_console() -> &'static PlatformConsole {
+pub(super) fn get_console() -> &'static impl Console {
     unsafe { (*&raw const CONSOLE).assume_init_ref() }
 }
 
-pub(crate) trait Console {
-    fn describe(&self, w: &mut impl fmt::Write);
-    fn write(&self, bytes: &[u8]);
+pub(crate) fn describe(w: &mut impl fmt::Write) {
+    get_console().describe(w);
 }
 
-impl<Base: uart::DriverBase> Console for uart::Driver<Base> {
-    #[inline]
-    fn describe(&self, w: &mut impl fmt::Write) {
-        uart::Driver::describe(self, w);
-    }
+pub(crate) fn init() {
+    set_console(backend::console());
+}
 
-    #[inline]
-    fn write(&self, bytes: &[u8]) {
-        uart::Driver::write(self, bytes);
-    }
+/// Writes to the platform-defined console.
+pub fn write(bytes: &[u8]) {
+    get_console().write(bytes);
 }

@@ -11,9 +11,9 @@ use libarch::riscv::sbi;
 use crate::platform::Console;
 
 #[allow(unused)]
-pub(crate) struct SbiConsole {}
+pub(crate) struct SbiDebugConsole {}
 
-impl Console for SbiConsole {
+impl Console for SbiDebugConsole {
     fn describe(&self, w: &mut impl fmt::Write) {
         let _ = write!(w, "SBI debug console");
     }
