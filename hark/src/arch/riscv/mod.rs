@@ -51,11 +51,11 @@ static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
 
 #[repr(C)]
 #[derive(Debug, Default)]
-pub struct PerCpu {}
+pub(crate) struct PerCpu {}
 
 #[repr(C)]
 #[derive(Debug, Default)]
-pub struct Regs {
+pub(crate) struct Regs {
     pub pc: usize,
     pub ra: usize,
     pub sp: usize,
