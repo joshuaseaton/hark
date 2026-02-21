@@ -8,7 +8,7 @@
 pub mod riscv;
 
 use core::marker::PhantomData;
-use core::ops::Deref;
+use core::ops::{Add, Deref};
 use core::ptr;
 
 use derive_more::{Deref, From};
@@ -34,6 +34,29 @@ use zerocopy::{FromBytes, IntoBytes};
 ///     *Default:* `rw`
 ///
 pub use regio_macro::offset;
+
+/// Associates a type as being an arrayed register at a fixed base offset.
+///
+/// Like [`offset`], but additionally implements [`Arrayed`].
+///
+/// ## Parameters
+///
+///   - *Required:* the base register offset as a `usize` expression.
+///     <br><br>
+///   - *Optional:* one of `ro`, `rw`, or `wo`, indicating read-only,
+///     read-write, or write-only access, respectively.
+///
+///     *Default:* `rw`
+///     <br><br>
+///   - *Optional:* `stride = <usize expression>`, the address increment
+///     between consecutive instances.
+///
+///     *Default:* `1`
+///
+/// The access mode and stride may be specified in either order after the
+/// offset.
+///
+pub use regio_macro::array;
 
 /// An abstract means of register access.
 pub trait IoBackend {
@@ -83,6 +106,17 @@ pub trait DefaultIo: Register {
     type Io: Default + IoBackend<Base = Self::Base, Addr = Self::Addr>;
 }
 
+/// A register type that may appear across multiple, evenly-spaced addresses.
+///
+/// This requires that one may "add" `usize`s to the register's abstract
+/// address type.
+pub trait Arrayed: Register<Addr: Add<usize, Output = Self::Addr>> {
+    /// The address increment between consecutive elements.
+    ///
+    /// Defaults to 1 (representing a contiguous array).
+    const STRIDE: usize = 1;
+}
+
 /// A register type, with flexibly abstracted I/O and addressing.
 pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
     /// The underlying type of the register (expected to be an unsigned integral
@@ -105,6 +139,17 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Self::from(io.read_at(addr))
     }
 
+    /// Like [`read_from_at`](Self::read_from_at), but reads the `n`th
+    /// arrayed instance.
+    #[inline]
+    fn read_nth_from_at<Io>(io: &Io, n: usize, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Arrayed + UnfixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
+    {
+        Self::from(io.read_at(addr + n * Self::STRIDE))
+    }
+
     /// Only enabled if the register is readable with a fixed address, this
     /// method reads the register value from any compatible I/O backend at its
     /// associated address.
@@ -115,6 +160,17 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
     {
         Self::from(io.read_at(Self::ADDR))
+    }
+
+    /// Like [`read_from`](Self::read_from), but reads the `n`th arrayed
+    /// instance.
+    #[inline]
+    fn read_nth_from<Io>(io: &Io, n: usize) -> Self
+    where
+        Self: Readable + Arrayed + FixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
+    {
+        Self::from(io.read_at(Self::ADDR + n * Self::STRIDE))
     }
 
     /// Only enabled if the register is readable with an unfixed address and a
@@ -128,6 +184,15 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Self::from(Self::Io::default().read_at(addr))
     }
 
+    /// Like [`read_at`](Self::read_at), but reads the `n`th arrayed instance.
+    #[inline]
+    fn read_nth_at(n: usize, addr: Self::Addr) -> Self
+    where
+        Self: Readable + Arrayed + UnfixedAddr + DefaultIo,
+    {
+        Self::from(Self::Io::default().read_at(addr + n * Self::STRIDE))
+    }
+
     /// Only enabled if the register is readable with a fixed address and a
     /// default I/O backend, this method reads the register value from its
     /// associated backend at its associated address.
@@ -137,6 +202,15 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Self: Readable + FixedAddr + DefaultIo,
     {
         Self::from(Self::Io::default().read_at(Self::ADDR))
+    }
+
+    /// Like [`read`](Self::read), but reads the `n`th arrayed instance.
+    #[inline]
+    fn read_nth(n: usize) -> Self
+    where
+        Self: Readable + Arrayed + FixedAddr + DefaultIo,
+    {
+        Self::from(Self::Io::default().read_at(Self::ADDR + n * Self::STRIDE))
     }
 
     /// Only enabled if the register is writable with an unfixed address, this
@@ -151,6 +225,17 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         io.write_at(*self, addr)
     }
 
+    /// Like [`write_to_at`](Self::write_to_at), but writes to the `n`th
+    /// arrayed instance.
+    #[inline]
+    fn write_nth_to_at<Io>(self, io: &Io, n: usize, addr: Self::Addr)
+    where
+        Self: Writable + Arrayed + UnfixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
+    {
+        io.write_at(*self, addr + n * Self::STRIDE)
+    }
+
     /// Only enabled if the register is writable with a fixed address, this
     /// method writes the register value to any compatible I/O backend at its
     /// associated address.
@@ -161,6 +246,17 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
     {
         io.write_at(*self, Self::ADDR)
+    }
+
+    /// Like [`write_to`](Self::write_to), but writes to the `n`th arrayed
+    /// instance.
+    #[inline]
+    fn write_nth_to<Io>(self, io: &Io, n: usize)
+    where
+        Self: Writable + Arrayed + FixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
+    {
+        io.write_at(*self, Self::ADDR + n * Self::STRIDE)
     }
 
     /// Only enabled if the register is writable with an unfixed address and a
@@ -174,6 +270,16 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Self::Io::default().write_at(*self, addr)
     }
 
+    /// Like [`write_at`](Self::write_at), but writes to the `n`th arrayed
+    /// instance.
+    #[inline]
+    fn write_nth_at(self, n: usize, addr: Self::Addr)
+    where
+        Self: Writable + Arrayed + UnfixedAddr + DefaultIo,
+    {
+        Self::Io::default().write_at(*self, addr + n * Self::STRIDE)
+    }
+
     /// Only enabled if the register is writable with a fixed address and a
     /// default I/O backend, this method writes the register value to the
     /// associated backend at the associated address.
@@ -183,6 +289,15 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         Self: Writable + FixedAddr + DefaultIo,
     {
         Self::Io::default().write_at(*self, Self::ADDR)
+    }
+
+    /// Like [`write`](Self::write), but writes to the `n`th arrayed instance.
+    #[inline]
+    fn write_nth(self, n: usize)
+    where
+        Self: Writable + Arrayed + FixedAddr + DefaultIo,
+    {
+        Self::Io::default().write_at(*self, Self::ADDR + n * Self::STRIDE)
     }
 
     /// Only enabled if the register is readable and writable with an unfixed
@@ -200,6 +315,20 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         value.write_to_at(io, addr)
     }
 
+    /// Like [`modify_with_at`](Self::modify_with_at), but modifies the `n`th
+    /// arrayed instance.
+    #[inline]
+    fn modify_nth_with_at<Io, F>(io: &Io, n: usize, mutate: F, addr: Self::Addr)
+    where
+        Self: Readable + Writable + Arrayed + UnfixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
+        F: FnOnce(&mut Self),
+    {
+        let mut value = Self::read_from_at(io, addr + n * Self::STRIDE);
+        mutate(&mut value);
+        value.write_to_at(io, addr + n * Self::STRIDE)
+    }
+
     /// Only enabled if the register is readable and writable with a fixed
     /// address, this method performs a read-modify-write on any compatible
     /// I/O backend at its associated address.
@@ -213,6 +342,20 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         let mut value = Self::read_from(io);
         mutate(&mut value);
         value.write_to(io)
+    }
+
+    /// Like [`modify_with`](Self::modify_with), but modifies the `n`th
+    /// arrayed instance.
+    #[inline]
+    fn modify_nth_with<Io, F>(io: &Io, n: usize, mutate: F)
+    where
+        Self: Readable + Writable + Arrayed + FixedAddr,
+        Io: IoBackend<Base = Self::Base, Addr = Self::Addr>,
+        F: FnOnce(&mut Self),
+    {
+        let mut value = Self::from(io.read_at(Self::ADDR + n * Self::STRIDE));
+        mutate(&mut value);
+        io.write_at(*value, Self::ADDR + n * Self::STRIDE)
     }
 
     /// Only enabled if the register is readable and writable with an unfixed
@@ -229,6 +372,19 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         value.write_at(addr)
     }
 
+    /// Like [`modify_at`](Self::modify_at), but modifies the `n`th arrayed
+    /// instance.
+    #[inline]
+    fn modify_nth_at<F>(n: usize, mutate: F, addr: Self::Addr)
+    where
+        Self: Readable + Writable + Arrayed + UnfixedAddr + DefaultIo,
+        F: FnOnce(&mut Self),
+    {
+        let mut value = Self::read_at(addr + n * Self::STRIDE);
+        mutate(&mut value);
+        value.write_at(addr + n * Self::STRIDE)
+    }
+
     /// Only enabled if the register is readable and writable with a fixed
     /// address and a default I/O backend, this method performs a
     /// read-modify-write with its associated backend at its associated address.
@@ -241,6 +397,19 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
         let mut value = Self::read();
         mutate(&mut value);
         value.write()
+    }
+
+    /// Like [`modify`](Self::modify), but modifies the `n`th arrayed instance.
+    #[inline]
+    fn modify_nth<F>(n: usize, mutate: F)
+    where
+        Self: Readable + Writable + Arrayed + FixedAddr + DefaultIo,
+        F: FnOnce(&mut Self),
+    {
+        let io = Self::Io::default();
+        let mut value = Self::from(io.read_at(Self::ADDR + n * Self::STRIDE));
+        mutate(&mut value);
+        io.write_at(*value, Self::ADDR + n * Self::STRIDE)
     }
 
     /// Only enabled if the register is readable and writable with an unfixed
@@ -397,6 +566,14 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
 /// An offset into an MMIO aperture at some context-defined stride.
 #[derive(Clone, Copy, Debug, Deref, Eq, From, PartialEq)]
 pub struct Offset(pub usize);
+
+impl Add<usize> for Offset {
+    type Output = Offset;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        Self(*self + rhs)
+    }
+}
 
 mod internal {
     pub trait FitsIn<Access> {

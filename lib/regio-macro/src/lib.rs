@@ -36,10 +36,82 @@ pub fn offset(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
+pub fn array(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as DeriveInput);
+    let ty = &input.ident;
+    let ArrayAttrs {
+        offset,
+        access,
+        stride,
+    } = parse_macro_input!(attr as ArrayAttrs);
+    let marker_impls = access.marker_impls(ty);
+    let stride: Expr = stride.unwrap_or_else(|| syn::parse_quote!(1));
+    quote! {
+        #input
+
+        impl ::regio::Register for #ty {
+            type Base = <Self as ::core::ops::Deref>::Target;
+            type Addr = ::regio::Offset;
+        }
+
+        impl ::regio::FixedAddr for #ty {
+            const ADDR: ::regio::Offset = ::regio::Offset(#offset);
+        }
+
+        impl ::regio::Arrayed for #ty {
+            const STRIDE: usize = #stride;
+        }
+
+        #marker_impls
+    }
+    .into()
+}
+
+#[proc_macro_attribute]
 pub fn riscv_csr(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as riscv::CsrAttrs);
     let input = parse_macro_input!(item as DeriveInput);
     attrs.expand(input).into()
+}
+
+struct ArrayAttrs {
+    offset: Expr,
+    access: AccessMode,
+    stride: Option<Expr>,
+}
+
+impl Parse for ArrayAttrs {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let offset: Expr = input.parse()?;
+        let mut access = None;
+        let mut stride = None;
+        while !input.is_empty() {
+            let _: Token![,] = input.parse()?;
+            if input.peek(Ident) && input.peek2(Token![=]) {
+                parse_stride(input, &mut stride)?;
+            } else {
+                access = Some(input.parse()?);
+            }
+        }
+        Ok(Self {
+            offset,
+            access: access.unwrap_or(AccessMode::ReadWrite),
+            stride,
+        })
+    }
+}
+
+fn parse_stride(input: ParseStream, stride: &mut Option<Expr>) -> Result<()> {
+    let ident: Ident = input.parse()?;
+    if ident != "stride" {
+        return Err(Error::new_spanned(
+            ident,
+            "`stride` is the only allowed key",
+        ));
+    }
+    let _: Token![=] = input.parse()?;
+    *stride = Some(input.parse()?);
+    Ok(())
 }
 
 struct OffsetAttrs {
