@@ -4,8 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-pub mod console;
-pub mod power;
+mod sifive_test;
 
-#[cfg_attr(platform = "qemu-virt-riscv", path = "qemu_virt_riscv.rs")]
-mod backend;
+pub use sifive_test::SiFiveTest;
+
+pub trait Manager {
+    fn shutdown() -> !;
+    fn halt() -> !;
+    fn reboot() -> !;
+}

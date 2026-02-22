@@ -13,6 +13,8 @@
 
 use core::ptr;
 
+use super::Manager;
+
 // The one and only register.
 const ADDR: usize = 0x10_0000;
 
@@ -21,28 +23,32 @@ const FAIL: u32 = 0x3333;
 const PASS: u32 = 0x5555;
 const RESET: u32 = 0x7777;
 
-// Terminates QEMU virt machine guest with an indication to QEMU that it shut
-// down in an orderly manner.
-pub(crate) fn shutdown() -> ! {
-    unsafe {
-        *(ptr::without_provenance_mut(ADDR)) = PASS;
-    }
-    loop {}
-}
+pub struct SiFiveTest {}
 
-// Terminates a QEMU virt machine guest with an indication to QEMU that it shut
-// down in an emergency.
-pub(crate) fn panic() -> ! {
-    unsafe {
-        *(ptr::without_provenance_mut(ADDR)) = FAIL;
+impl Manager for SiFiveTest {
+    // Terminates QEMU virt machine guest with an indication to QEMU that it shut
+    // down in an orderly manner.
+    fn shutdown() -> ! {
+        unsafe {
+            *(ptr::without_provenance_mut(ADDR)) = PASS;
+        }
+        loop {}
     }
-    loop {}
-}
 
-// Reboots a QEMU virt machine guest.
-pub(crate) fn reset() -> ! {
-    unsafe {
-        *(ptr::without_provenance_mut(ADDR)) = RESET;
+    // Terminates a QEMU virt machine guest with an indication to QEMU that it shut
+    // down in an emergency.
+    fn halt() -> ! {
+        unsafe {
+            *(ptr::without_provenance_mut(ADDR)) = FAIL;
+        }
+        loop {}
     }
-    loop {}
+
+    // Reboots a QEMU virt machine guest.
+    fn reboot() -> ! {
+        unsafe {
+            *(ptr::without_provenance_mut(ADDR)) = RESET;
+        }
+        loop {}
+    }
 }

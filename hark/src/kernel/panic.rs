@@ -34,7 +34,7 @@ pub(crate) fn panic_common<PrintContext: FnOnce()>(
     print_backtrace(fp, pc);
 
     // Nothing more yet to do.
-    platform::halt()
+    platform::power::halt()
 }
 
 #[inline(never)]

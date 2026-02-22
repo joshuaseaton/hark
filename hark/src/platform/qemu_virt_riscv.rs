@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use crate::dev::sifive_test;
+use crate::dev::power::SiFiveTest;
 
 #[cfg(not(any(target_arch = "riscv32", target_arch = "riscv64")))]
 compile_error!("qemu-virt-riscv is only defined for RISC-V");
@@ -32,17 +32,4 @@ cfg_if::cfg_if! {
     }
 }
 
-#[inline]
-pub fn shutdown() -> ! {
-    sifive_test::shutdown()
-}
-
-#[inline]
-pub fn halt() -> ! {
-    sifive_test::panic()
-}
-
-#[inline]
-pub fn reboot() -> ! {
-    sifive_test::reset();
-}
+pub type PowerManager = SiFiveTest;
