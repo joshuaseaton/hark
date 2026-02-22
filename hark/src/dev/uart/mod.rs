@@ -10,7 +10,7 @@ use core::fmt;
 
 use regio::{IoBackend, Mmio};
 
-use crate::platform::Console;
+use crate::dev::Console;
 
 pub type Ns8250 = Driver<ns8250::Base<Mmio<u8>>>;
 
@@ -44,7 +44,6 @@ impl<Base: DriverBase> Driver<Base> {
 }
 
 impl<Base: DriverBase> Console for Driver<Base> {
-    #[inline]
     fn describe(&self, w: &mut impl fmt::Write) {
         Base::describe(w, &self.state);
     }

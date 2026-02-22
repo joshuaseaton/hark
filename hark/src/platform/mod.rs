@@ -6,17 +6,8 @@
 
 pub mod console;
 
-use core::fmt;
-
 #[cfg_attr(platform = "qemu-virt-riscv", path = "qemu_virt_riscv.rs")]
 mod backend;
-
-// The abstract platform console interface. backend::Console is expected to
-// implement it.
-pub(crate) trait Console {
-    fn describe(&self, w: &mut impl fmt::Write);
-    fn write(&self, bytes: &[u8]);
-}
 
 /// Shuts down the system in an orderly manner.
 pub fn shutdown() -> ! {

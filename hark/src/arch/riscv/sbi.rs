@@ -8,7 +8,7 @@ use core::fmt;
 
 use libarch::riscv::sbi;
 
-use crate::platform::Console;
+use crate::dev::Console;
 
 #[allow(unused)]
 pub(crate) struct SbiDebugConsole {}

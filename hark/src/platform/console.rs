@@ -7,7 +7,8 @@
 use core::fmt;
 use core::mem::MaybeUninit;
 
-use crate::platform::{Console, backend};
+use crate::dev::Console;
+use crate::platform::backend;
 
 static mut CONSOLE: MaybeUninit<backend::Console> = MaybeUninit::uninit();
 

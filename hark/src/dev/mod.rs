@@ -6,3 +6,10 @@
 
 pub mod sifive_test;
 pub mod uart;
+
+use core::fmt;
+
+pub(crate) trait Console {
+    fn describe(&self, w: &mut impl fmt::Write);
+    fn write(&self, bytes: &[u8]);
+}
