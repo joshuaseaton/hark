@@ -10,7 +10,6 @@ use libarch::riscv::sbi;
 
 use crate::dev::Console;
 
-#[allow(unused)]
 pub(crate) struct SbiDebugConsole {}
 
 impl Console for SbiDebugConsole {

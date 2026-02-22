@@ -15,18 +15,14 @@ use crate::kernel::panic_common;
 use crate::{print, println};
 
 cfg_if::cfg_if! {
-    if #[cfg(not(riscv_m_mode))] {
-        use libarch::riscv::csr::Stimecmp;
-    }
-}
-
-cfg_if::cfg_if! {
     if #[cfg(riscv_m_mode)] {
         macro_rules! read_xcause_into_a0 { () => { "csrr a0, mcause" }; }
         macro_rules! read_xepc_into_t0 { () => { "csrr t0, mepc" }; }
         macro_rules! set_xie_fn { () => { |reg: &mut Xstatus| { reg.set_mie(true); } }; }
         macro_rules! xret { () => { "mret" }; }
     } else {
+        use libarch::riscv::csr::Stimecmp;
+
         macro_rules! read_xcause_into_a0 { () => { "csrr a0, scause" }; }
         macro_rules! read_xepc_into_t0 { () => { "csrr t0, sepc" }; }
         macro_rules! set_xie_fn { () => { |reg: &mut Xstatus| { reg.set_sie(true); } }; }

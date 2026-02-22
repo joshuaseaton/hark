@@ -6,14 +6,16 @@
 
 use core::arch::{global_asm, naked_asm};
 
-#[cfg(not(riscv_m_mode))]
-use libarch::riscv::csr::Sstatus;
-
 const STACK_SIZE: u64 = 0x2000; // 8KiB
 
-#[cfg(not(riscv_m_mode))]
-#[unsafe(no_mangle)]
-pub(crate) static BOOT_HART_ID: usize = 0;
+cfg_if::cfg_if! {
+    if #[cfg(not(riscv_m_mode))] {
+        use libarch::riscv::csr::Sstatus;
+
+        #[unsafe(no_mangle)]
+        pub(crate) static BOOT_HART_ID: usize = 0;
+    }
+}
 
 // TODO: Define this via a more generic asm object macro?
 global_asm!(

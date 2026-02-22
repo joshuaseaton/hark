@@ -4,46 +4,21 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-mod sbi;
-
-#[allow(unused)]
-pub(crate) use sbi::*;
+cfg_if::cfg_if! {
+    if #[cfg(all(not(riscv_m_mode), riscv_sbi_console))] {
+        mod sbi;
+        pub(crate) use sbi::*;
+    }
+}
 
 mod exception;
-
 mod start;
-
-#[cfg(not(riscv_m_mode))]
-use start::BOOT_HART_ID;
 
 use core::{fmt, mem, ptr};
 
-use crate::println;
-
 use regio::Register as _;
 
-cfg_if::cfg_if! {
-    if #[cfg(riscv_m_mode)] {
-        use libarch::riscv::csr::{Marchid, Mhartid, Misa, Mvendorid, Mimpid};
-        use crate::print;
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(riscv_m_mode)] {
-        type Xie = libarch::riscv::csr::Mie;
-        type Xscratch = libarch::riscv::csr::Mscratch;
-        type Xstatus = libarch::riscv::csr::Mstatus;
-        type Xtval = libarch::riscv::csr::Mtval;
-        type Xtvec = libarch::riscv::csr::Mtvec;
-    } else {
-        type Xie = libarch::riscv::csr::Sie;
-        type Xscratch = libarch::riscv::csr::Sscratch;
-        type Xstatus = libarch::riscv::csr::Sstatus;
-        type Xtval = libarch::riscv::csr::Stval;
-        type Xtvec = libarch::riscv::csr::Stvec;
-    }
-}
+use crate::println;
 
 #[used]
 static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
@@ -148,35 +123,56 @@ pub fn init() {
     exception::init();
 }
 
-#[inline]
 #[cfg(riscv_m_mode)]
-pub fn print_machine_context() {
-    println!("Entry mode: M");
-    println!("Boot hart ID: {:#}", *Mhartid::read());
-    println!(
-        "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
-        *Mvendorid::read(),
-        *Marchid::read(),
-        *Mimpid::read()
-    );
-    print!("misa: ");
-    let mut first = true;
-    for (metadata, value) in Misa::read().iter().rev() {
-        if value == 0 {
-            continue;
+mod xmode {
+    use super::*;
+
+    pub(super) use libarch::riscv::csr::{Marchid, Mhartid, Mimpid, Misa, Mvendorid};
+    pub(super) use libarch::riscv::csr::{
+        Mie as Xie, Mscratch as Xscratch, Mstatus as Xstatus, Mtval as Xtval, Mtvec as Xtvec,
+    };
+
+    use crate::print;
+
+    pub fn print_machine_context() {
+        println!("Entry mode: M");
+        println!("Boot hart ID: {:#}", *Mhartid::read());
+        println!(
+            "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
+            *Mvendorid::read(),
+            *Marchid::read(),
+            *Mimpid::read()
+        );
+        print!("misa: ");
+        let mut first = true;
+        for (metadata, value) in Misa::read().iter().rev() {
+            if value == 0 {
+                continue;
+            }
+            if !first {
+                print!(",");
+            }
+            print!("{}", metadata.name);
+            first = false;
         }
-        if !first {
-            print!(",");
-        }
-        print!("{}", metadata.name);
-        first = false;
+        print!("\n");
     }
-    print!("\n");
 }
 
-#[inline]
 #[cfg(not(riscv_m_mode))]
-pub fn print_machine_context() {
-    println!("Entry mode: S");
-    println!("Boot hart ID: {BOOT_HART_ID:#}");
+mod xmode {
+    use super::*;
+    use start::BOOT_HART_ID;
+
+    pub(super) use libarch::riscv::csr::{
+        Sie as Xie, Sscratch as Xscratch, Sstatus as Xstatus, Stval as Xtval, Stvec as Xtvec,
+    };
+
+    pub fn print_machine_context() {
+        println!("Entry mode: S");
+        println!("Boot hart ID: {BOOT_HART_ID:#}");
+    }
 }
+
+pub use xmode::print_machine_context;
+use xmode::*;
