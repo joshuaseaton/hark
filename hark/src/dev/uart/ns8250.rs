@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use core::cmp::min;
 use core::fmt;
 use core::marker::PhantomData;
 
@@ -261,13 +260,15 @@ impl<Io: UartIo> DriverBase for Base<Io> {
         LineStatusRegister::read_from(io).tx_register_empty()
     }
 
-    fn write<'a>(io: &Io, state: &State, bytes: &'a [u8]) -> &'a [u8] {
-        // We assume this FIFO is empty when this method is called.
-        let count = min(state.fifo_depth, bytes.len());
-        let (bytes, rest) = unsafe { bytes.split_at_unchecked(count) };
-        for byte in bytes {
-            TxBufferRegister::from(*byte).write_to(io);
+    fn fill_fifo(io: &Io, state: &State, bytes: &mut impl Iterator<Item = u8>) -> bool {
+        let mut space = state.fifo_depth;
+        while space > 0 {
+            let Some(byte) = bytes.next() else {
+                return false;
+            };
+            TxBufferRegister::from(byte).write_to(io);
+            space -= 1;
         }
-        rest
+        true
     }
 }

@@ -23,8 +23,11 @@ pub trait DriverBase {
     fn init(io: &Self::Io, state: &mut Self::State);
     fn tx_ready(io: &Self::Io) -> bool;
 
-    // Assumes the FIFO is empty at the time of write.
-    fn write<'a>(io: &Self::Io, state: &Self::State, bytes: &'a [u8]) -> &'a [u8];
+    // Writes as many bytes to the FIFO as possible, returning true if it was
+    // able to fill it fully, and thus false if the iterator was exhausted.
+    //
+    // Assumes the FIFO is empty.
+    fn fill_fifo(io: &Self::Io, state: &Self::State, bytes: &mut impl Iterator<Item = u8>) -> bool;
 }
 
 // A generic UART driver.
@@ -50,10 +53,58 @@ impl<Base: DriverBase> Console for Driver<Base> {
 
     // Writes the provided bytes to the UART.
     #[inline]
-    fn write(&self, mut bytes: &[u8]) {
-        while !bytes.is_empty() {
+    fn write(&self, bytes: &[u8]) {
+        let mut it = CrlfByteIterator::new(bytes);
+        loop {
             while !Base::tx_ready(&self.io) {}
-            bytes = Base::write(&self.io, &self.state, bytes);
+            if !Base::fill_fifo(&self.io, &self.state, &mut it) {
+                break;
+            }
         }
+    }
+}
+
+// A byte iterator that massages b'\n' into b"\r\n".
+//
+// While a standard translation done by all terminal emulators, we use this for
+// compatibility in the case where there is no software layer between the UART
+// and the display available to do the conversion (e.g., when hooked up to a
+// physical VT100).
+struct CrlfByteIterator<'a> {
+    bytes: &'a [u8],
+    pos: usize,
+
+    // Whether the last byte seen was b'\r'.
+    prev_cr: bool,
+}
+
+impl<'a> CrlfByteIterator<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            pos: 0,
+            prev_cr: false,
+        }
+    }
+}
+
+impl Iterator for CrlfByteIterator<'_> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<u8> {
+        if self.pos >= self.bytes.len() {
+            return None;
+        }
+        let next = self.bytes[self.pos];
+        if next == b'\n' {
+            if !self.prev_cr {
+                self.prev_cr = true;
+                return Some(b'\r');
+            }
+            self.prev_cr = false;
+        }
+        self.prev_cr = next == b'\r';
+        self.pos += 1;
+        Some(next)
     }
 }
