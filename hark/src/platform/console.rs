@@ -12,13 +12,13 @@ use crate::platform::backend;
 
 static mut CONSOLE: MaybeUninit<backend::Console> = MaybeUninit::uninit();
 
-pub(super) fn set_console(console: backend::Console) {
+fn set_console(console: backend::Console) {
     unsafe {
         (*&raw mut CONSOLE).write(console);
     }
 }
 
-pub(super) fn get_console() -> &'static impl Console {
+fn get_console() -> &'static impl Console {
     unsafe { (*&raw const CONSOLE).assume_init_ref() }
 }
 

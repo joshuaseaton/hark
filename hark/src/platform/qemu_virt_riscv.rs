@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
+use crate::dev::interrupt::Plic;
 use crate::dev::power::SiFiveTest;
 
 #[cfg(not(any(target_arch = "riscv32", target_arch = "riscv64")))]
@@ -32,4 +33,13 @@ cfg_if::cfg_if! {
     }
 }
 
+const PLIC_ADDR: usize = 0x0c00_0000;
+pub const MAX_IRQ: u32 = 96;
+
 pub type PowerManager = SiFiveTest;
+
+pub type InterruptController = Plic;
+
+pub fn interrupt_controller() -> Plic {
+    Plic::new(PLIC_ADDR, MAX_IRQ)
+}

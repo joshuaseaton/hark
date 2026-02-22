@@ -74,6 +74,8 @@ extern "C" fn hark_main() {
     arch::init();
     arch::print_machine_context();
 
+    platform::interrupt::init();
+
     // Nothing more yet to do.
     panic!("this panic was intentional");
 }

@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT
 
 pub mod console;
+pub mod interrupt;
 pub mod power;
 
 #[cfg_attr(platform = "qemu-virt-riscv", path = "qemu_virt_riscv.rs")]

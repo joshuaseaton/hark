@@ -20,3 +20,20 @@ pub(crate) fn init() {
 pub(crate) fn print_machine_context() {
     backend::print_machine_context();
 }
+
+/// Returns the current CPU number.
+///
+/// For RISC-V this is the hart ID.
+pub fn current_cpu_number() -> u32 {
+    backend::current_cpu_number()
+}
+
+/// Enables interrupts.
+pub fn enable_interrupts() {
+    backend::enable_interrupts();
+}
+
+/// Disables interrupts.
+pub fn disable_interrupts() {
+    backend::disable_interrupts();
+}

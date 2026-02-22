@@ -10,22 +10,21 @@ use core::mem::offset_of;
 use libarch::riscv::csr::{ExceptionCode, InterruptCode, TrapVectorMode};
 use regio::Register as _;
 
-use crate::arch::riscv::{Regs, Xie, Xstatus, Xtval, Xtvec};
+use crate::arch::riscv::{Regs, Xie, Xtval, Xtvec, enable_interrupts};
 use crate::kernel::panic_common;
+use crate::platform;
 use crate::{print, println};
 
 cfg_if::cfg_if! {
     if #[cfg(riscv_m_mode)] {
         macro_rules! read_xcause_into_a0 { () => { "csrr a0, mcause" }; }
         macro_rules! read_xepc_into_t0 { () => { "csrr t0, mepc" }; }
-        macro_rules! set_xie_fn { () => { |reg: &mut Xstatus| { reg.set_mie(true); } }; }
         macro_rules! xret { () => { "mret" }; }
     } else {
         use libarch::riscv::csr::Stimecmp;
 
         macro_rules! read_xcause_into_a0 { () => { "csrr a0, scause" }; }
         macro_rules! read_xepc_into_t0 { () => { "csrr t0, sepc" }; }
-        macro_rules! set_xie_fn { () => { |reg: &mut Xstatus| { reg.set_sie(true); } }; }
         macro_rules! xret { () => { "sret" }; }
     }
 }
@@ -48,8 +47,14 @@ pub(super) fn init() {
 
     // Enable all supported interrupts.
     // TODO: support more!
-    Xie::from(0).set_stie(true).write();
-    Xstatus::modify(set_xie_fn!());
+    cfg_if::cfg_if! {
+        if #[cfg(riscv_m_mode)] {
+            Xie::from(0).set_meie(true).write();
+        } else {
+            Xie::from(0).set_stie(true).set_seie(true).write();
+        }
+    }
+    enable_interrupts();
 }
 
 #[unsafe(no_mangle)]
@@ -225,6 +230,14 @@ extern "C" fn handle_interrupt(code: InterruptCode) {
             // TODO: no magic numbers and this should be downstream of a more
             // general policy.
             Stimecmp::from(*libarch::riscv::csr::Time::read() + 50_000_000).write();
+        }
+        #[cfg(not(riscv_m_mode))]
+        InterruptCode::SUPERVISOR_EXTERNAL_INTERRUPT => {
+            platform::interrupt::handle();
+        }
+        #[cfg(riscv_m_mode)]
+        InterruptCode::MACHINE_EXTERNAL_INTERRUPT => {
+            platform::interrupt::handle();
         }
         _ => panic!("Unexpected interrupt: {code}"),
     }

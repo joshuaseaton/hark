@@ -157,6 +157,21 @@ mod xmode {
         }
         print!("\n");
     }
+
+    #[inline]
+    pub fn current_cpu_number() -> u32 {
+        *Mhartid::read() as u32
+    }
+
+    #[inline]
+    pub fn enable_interrupts() {
+        Xstatus::from(0).set_mie(true).atomic_set_bits();
+    }
+
+    #[inline]
+    pub fn disable_interrupts() {
+        Xstatus::from(0).set_mie(true).atomic_clear_bits();
+    }
 }
 
 #[cfg(not(riscv_m_mode))]
@@ -172,7 +187,21 @@ mod xmode {
         println!("Entry mode: S");
         println!("Boot hart ID: {BOOT_HART_ID:#}");
     }
+
+    #[inline]
+    pub fn current_cpu_number() -> u32 {
+        BOOT_HART_ID as u32
+    }
+
+    #[inline]
+    pub fn enable_interrupts() {
+        Xstatus::from(0).set_sie(true).atomic_set_bits();
+    }
+
+    #[inline]
+    pub fn disable_interrupts() {
+        Xstatus::from(0).set_sie(true).atomic_clear_bits();
+    }
 }
 
-pub use xmode::print_machine_context;
-use xmode::*;
+pub use xmode::*;
