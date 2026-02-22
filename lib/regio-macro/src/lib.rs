@@ -45,7 +45,11 @@ pub fn array(attr: TokenStream, item: TokenStream) -> TokenStream {
         stride,
     } = parse_macro_input!(attr as ArrayAttrs);
     let marker_impls = access.marker_impls(ty);
-    let stride: Expr = stride.unwrap_or_else(|| syn::parse_quote!(1));
+    let stride = if let Some(stride) = stride {
+        quote! {const STRIDE: usize = #stride; }
+    } else {
+        quote! {const STRIDE: usize = ::core::mem::size_of::<<Self as ::core::ops::Deref>::Target>(); }
+    };
     quote! {
         #input
 
@@ -59,7 +63,7 @@ pub fn array(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         impl ::regio::Arrayed for #ty {
-            const STRIDE: usize = #stride;
+            #stride
         }
 
         #marker_impls

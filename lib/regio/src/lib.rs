@@ -51,7 +51,7 @@ pub use regio_macro::offset;
 ///   - *Optional:* `stride = <usize expression>`, the address increment
 ///     between consecutive instances.
 ///
-///     *Default:* `1`
+///     *Default:* `size_of::<<Self as Deref>::Target>()`
 ///
 /// The access mode and stride may be specified in either order after the
 /// offset.
@@ -113,8 +113,8 @@ pub trait DefaultIo: Register {
 pub trait Arrayed: Register<Addr: Add<usize, Output = Self::Addr>> {
     /// The address increment between consecutive elements.
     ///
-    /// Defaults to 1 (representing a contiguous array).
-    const STRIDE: usize = 1;
+    /// Defaults to the size of the register (representing a contiguous array).
+    const STRIDE: usize = size_of::<Self>();
 }
 
 /// A register type, with flexibly abstracted I/O and addressing.
@@ -563,7 +563,10 @@ pub trait Register: From<Self::Base> + Deref<Target = Self::Base> {
     }
 }
 
-/// An offset into an MMIO aperture at some context-defined stride.
+/// An offset in a peripheral's register address space.
+///
+/// Interpretation in practice depends on the [`Mmio`] instance: a register
+/// index when `Access > Reg`, a byte offset when `Reg == Access`.
 #[derive(Clone, Copy, Debug, Deref, Eq, From, PartialEq)]
 pub struct Offset(pub usize);
 
@@ -611,29 +614,45 @@ mod internal {
 /// (`Reg`) and the physical bus width (`Access`, defaulting to `Reg`),
 /// addressed by register offset ([`Offset`]).
 ///
+/// The base pointer is byte-addressed. Offsets are scaled by a factor of
+/// `size_of::<Access>() / size_of::<Reg>()` to compute byte addresses:
+///
+///   `byte_address = base + offset * scale`
+///
+/// When `Access > Reg`, each register-width offset unit maps to one
+/// `Access`-width physical slot.
+///
+/// | Type | Scale | Offset 1 maps to byte |
+/// |---|---|---|
+/// | `Mmio<u8>` | 1 | 1 |
+/// | `Mmio<u8, u32>` | 4 | 4 |
+/// | `Mmio<u32>` | 1 | 1 |
+///
 /// ```
 /// use regio::Mmio;
 ///
-/// // An 8-bit register space at 0x1000'0000 spanning 8 bytes.
+/// // 8-bit registers, byte-addressed.
 /// let io = Mmio::<u8>::new(0x1000_0000, 8);
 ///
-/// // 8-bit registers accessed at 0x1000'0000 over a 32-bit bus, spanning
-/// // sizeof(u32) * 8 bytes.
+/// // 8-bit registers over a 32-bit bus; offset 1 maps to byte 4.
 /// let io = Mmio::<u8, u32>::new(0x1000_0000, 8);
+///
+/// // 32-bit registers, byte-addressed.
+/// let io = Mmio::<u32>::new(0x1000_0000, 8);
 /// ```
 ///
 /// `Reg` is bounded by an internal trait representing a register value type
 /// that can be widened to and truncated from a type representing a wider bus
-/// width. This trait is implemented for for all pairs of unsigned integer types
+/// width. This trait is implemented for all pairs of unsigned integer types
 /// up to u64 where `Self` is no wider than `Access`.
 pub struct Mmio<Reg, Access = Reg>
 where
     Reg: internal::FitsIn<Access>,
     Access: FromBytes + IntoBytes,
 {
-    base: *mut Access,
+    base: *mut u8,
     size: usize,
-    phantom: PhantomData<Reg>,
+    phantom: PhantomData<(Reg, Access)>,
 }
 
 impl<Reg, Access> Mmio<Reg, Access>
@@ -660,17 +679,21 @@ where
     type Base = Reg;
 
     fn read_at(&self, offset: Offset) -> Reg {
+        let scale = size_of::<Access>() / size_of::<Reg>();
         debug_assert!(*offset < self.size);
+        debug_assert!((*offset * scale).is_multiple_of(align_of::<Access>()));
         unsafe {
-            let ptr = self.base.add(*offset);
+            let ptr = self.base.add(*offset * scale).cast::<Access>();
             Reg::truncate(ptr::read_volatile(ptr))
         }
     }
 
     fn write_at(&self, value: Reg, offset: Offset) {
+        let scale = size_of::<Access>() / size_of::<Reg>();
         debug_assert!(*offset < self.size);
+        debug_assert!((*offset * scale).is_multiple_of(align_of::<Access>()));
         unsafe {
-            let ptr = self.base.add(*offset);
+            let ptr = self.base.add(*offset * scale).cast::<Access>();
             ptr::write_volatile(ptr, value.widen())
         }
     }
