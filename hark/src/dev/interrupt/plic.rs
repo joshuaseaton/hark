@@ -135,7 +135,7 @@ impl ControllerBase for Plic {
         InterruptEnableBits::set_for_context(io, context, irq as usize, true);
     }
 
-    fn claim_irq(io: &Io, context: Context) -> Option<u32> {
+    fn claim_pending_irq(io: &Io, context: Context) -> Option<u32> {
         let irq = *InterruptClaimProcess::read_nth_from(io, *context);
         (irq > 0).then_some(irq)
     }

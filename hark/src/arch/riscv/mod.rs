@@ -103,7 +103,7 @@ impl fmt::Display for Regs {
             "  s8:  {:#0w$x}  s9:  {:#0w$x}  s10: {:#0w$x}  s11: {:#0w$x} ",
             self.s8, self.s9, self.s10, self.s11
         )?;
-        writeln!(
+        write!(
             f,
             "  t3:  {:#0w$x}  t4:  {:#0w$x}  t5:  {:#0w$x}  t6:  {:#0w$x} ",
             self.t3, self.t4, self.t5, self.t6
@@ -129,7 +129,8 @@ mod xmode {
 
     pub(super) use libarch::riscv::csr::{Marchid, Mhartid, Mimpid, Misa, Mvendorid};
     pub(super) use libarch::riscv::csr::{
-        Mie as Xie, Mscratch as Xscratch, Mstatus as Xstatus, Mtval as Xtval, Mtvec as Xtvec,
+        Mcause as Xcause, Mepc as Xepc, Mie as Xie, Mscratch as Xscratch, Mstatus as Xstatus,
+        Mtvec as Xtvec,
     };
 
     use crate::print;
@@ -180,7 +181,8 @@ mod xmode {
     use start::BOOT_HART_ID;
 
     pub(super) use libarch::riscv::csr::{
-        Sie as Xie, Sscratch as Xscratch, Sstatus as Xstatus, Stval as Xtval, Stvec as Xtvec,
+        Scause as Xcause, Sepc as Xepc, Sie as Xie, Sscratch as Xscratch, Sstatus as Xstatus,
+        Stvec as Xtvec,
     };
 
     pub fn print_machine_context() {

@@ -33,7 +33,7 @@ pub trait ControllerBase {
 
     fn enable_irq(io: &Self::Io, target: Self::TargetId, irq: u32);
 
-    fn claim_irq(io: &Self::Io, target: Self::TargetId) -> Option<u32>;
+    fn claim_pending_irq(io: &Self::Io, target: Self::TargetId) -> Option<u32>;
 
     fn complete_irq(io: &Self::Io, target: Self::TargetId, irq: u32);
 }
@@ -62,8 +62,8 @@ impl<Base: ControllerBase> Controller<Base> {
         Base::enable_irq(&self.io, Self::local_id(), irq);
     }
 
-    pub fn claim_irq(&self) -> Option<u32> {
-        Base::claim_irq(&self.io, Self::local_id())
+    pub fn claim_pending_irq(&self) -> Option<u32> {
+        Base::claim_pending_irq(&self.io, Self::local_id())
     }
 
     pub fn complete_irq(&self, irq: u32) {

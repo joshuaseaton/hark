@@ -34,11 +34,15 @@ pub(crate) fn init() {
     });
 }
 
-pub(crate) fn handle() {
+pub(crate) fn claim_pending_irq() -> u32 {
+    get_dispatcher()
+        .controller
+        .claim_pending_irq()
+        .expect("no pending interrupt!")
+}
+
+pub(crate) fn handle(irq: u32) {
     let dispatcher = get_dispatcher();
-    let Some(irq) = dispatcher.controller.claim_irq() else {
-        return;
-    };
     dispatcher.handlers[irq as usize]();
     dispatcher.controller.complete_irq(irq);
 }
