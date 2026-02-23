@@ -20,9 +20,14 @@ SECTIONS {
     *(.stext*)
   }
 
-  /* Only offline unwind info (in .debug_frame) should be present. */
-  .eh_frame : { *(.eh_frame*) }
-  ASSERT(SIZEOF(.eh_frame) == 0, "no .eh_frame should be emitted")
+  /*
+   * Only offline unwind info (in .debug_frame) should be present.
+   *
+   * TODO: link to the Rust issue preventing this section from being empty when
+   * linking against the alloc crate, and go back to asserting emptiness once
+   * resolved.
+   */
+  /DISACARD/ : { *(.eh_frame*) }
 
   .rodata : { *(.srodata*) *(.rodata*) }
 

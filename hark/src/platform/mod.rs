@@ -6,7 +6,13 @@
 
 pub mod console;
 pub mod interrupt;
+mod memory;
 pub mod power;
 
 #[cfg_attr(platform = "qemu-virt-riscv", path = "qemu_virt_riscv.rs")]
 mod backend;
+
+pub(crate) fn init_post_console() {
+    interrupt::init();
+    memory::init(&backend::MEMORY_MAP);
+}

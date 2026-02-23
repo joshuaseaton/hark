@@ -6,6 +6,7 @@
 
 use crate::dev::interrupt::Plic;
 use crate::dev::power::SiFiveTest;
+use crate::platform::memory;
 
 #[cfg(not(any(target_arch = "riscv32", target_arch = "riscv64")))]
 compile_error!("qemu-virt-riscv is only defined for RISC-V");
@@ -35,6 +36,14 @@ cfg_if::cfg_if! {
 
 const PLIC_ADDR: usize = 0x0c00_0000;
 pub const MAX_IRQ: u32 = 96;
+
+pub const MEMORY_MAP: [memory::Range; 1] = [
+    // TODO: size based on compile-time configuration?
+    memory::Range {
+        start: 0x8000_0000,
+        size: 0x800_0000,
+    },
+];
 
 pub type PowerManager = SiFiveTest;
 

@@ -11,5 +11,5 @@ include = [ { path = "board.toml", optional = true } ]
 HARK_OPTIONS = { value = ".cargo/options.json", relative = true }
 
 [unstable]
-build-std = [ "core" ]
+build-std = [ "alloc", "core" ]
 build-std-features = [ "compiler-builtins-mem" ]

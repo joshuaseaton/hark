@@ -18,6 +18,8 @@ pub mod platform;
 #[cfg_attr(not(clippy), allow(dead_code))]
 pub(crate) mod dev;
 
+extern crate alloc;
+
 use core::fmt;
 
 use kernel::debug::build_id;
@@ -59,6 +61,7 @@ macro_rules! println {
 }
 
 // Jumped to from _start after initialization.
+#[allow(clippy::vec_init_then_push)]
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
     platform::console::init();
@@ -74,7 +77,7 @@ extern "C" fn hark_main() {
     arch::init();
     arch::print_machine_context();
 
-    platform::interrupt::init();
+    platform::init_post_console();
 
     // Nothing more yet to do.
     panic!("this panic was intentional");
