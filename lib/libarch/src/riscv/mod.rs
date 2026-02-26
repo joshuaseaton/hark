@@ -10,25 +10,31 @@ pub mod csr;
 /// Supervisor Binary Interface
 pub mod sbi;
 
+#[doc(hidden)]
+#[macro_export]
+#[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))]
+macro_rules! __frame_pointer {
+    () => {{
+        let fp: usize;
+        unsafe {
+            core::arch::asm!(
+                "mv {}, s0",
+                out(reg) fp, options(nomem, nostack, preserves_flags),
+            );
+        }
+        fp
+    }};
+}
+
 cfg_if::cfg_if! {
     if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
-        use core::{arch::asm, ptr};
+        use core::ptr;
 
         use crate::{CallFrame, ArchCommon};
 
         pub(super) struct Arch {}
 
         impl ArchCommon for Arch {
-
-            #[inline(always)]
-            fn frame_pointer() -> usize {
-                let mut fp: usize;
-                unsafe {
-                    asm!("mv {}, s0", out(reg) fp);
-                }
-                fp
-            }
-
             fn call_frame(fp: usize) -> CallFrame {
                 unsafe {
                     let frame: *const usize = ptr::without_provenance(fp);

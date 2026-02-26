@@ -9,27 +9,23 @@
 /// riscv32, riscv64
 pub mod riscv;
 
+/// Returns the frame pointer within the scope of the caller.
+#[macro_export]
+macro_rules! frame_pointer {
+    () => {
+        $crate::__frame_pointer!()
+    };
+}
+
 #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
 use riscv::Arch;
 
 cfg_if::cfg_if! {
     if #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))] {
 
-        // The common architectural interface. Defining the associated freeform
-        // functions below in terms of a private implementation of this trait
-        // allows us to document the functions in precisely one place.
+        // The common architectural interface.
         trait ArchCommon {
-            fn frame_pointer() -> usize;
             fn call_frame(fp: usize) -> CallFrame;
-        }
-
-        /// The frame pointer within the scope of the caller (except in the
-        /// unlikely cases where the compiler opts not to inline this
-        /// `inline(always)` function, in which case the backtrace will begin
-        /// in the function's own frame).
-        #[inline(always)]
-        pub fn frame_pointer() -> usize {
-            Arch::frame_pointer()
         }
 
         #[derive(Clone, Copy, Debug)]

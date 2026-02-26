@@ -20,7 +20,7 @@ const HARK_GOODBYE: &str = r"
 
 #[panic_handler]
 pub fn panic(info: &PanicInfo) -> ! {
-    panic_common(libarch::frame_pointer(), None, || print_panic_info(info));
+    panic_common(libarch::frame_pointer!(), None, || print_panic_info(info));
 }
 
 // Common panic routine for use within panic!() and in exception handling.
