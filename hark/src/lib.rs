@@ -79,8 +79,8 @@ extern "C" fn hark_main() {
 
     platform::init_post_console();
 
-    // Nothing more yet to do.
-    panic!("this panic was intentional");
+    // Nothing else to do, so drop into the shell.
+    kernel::shell::enter();
 }
 
 //

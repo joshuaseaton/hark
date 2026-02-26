@@ -34,3 +34,19 @@ pub(crate) fn init() {
 pub fn write(bytes: &[u8]) {
     get_console().write(bytes);
 }
+
+// Writs a byte to the platform-defined console.
+pub fn write_byte(byte: u8) {
+    write(&[byte; 1]);
+}
+
+/// Reads a byte from the platform-defined console (non-blocking).
+pub fn read_byte() -> Option<u8> {
+    get_console().read_byte()
+}
+
+/// Reads from the platform-defined console into a provided buffer
+/// (non-blocking), returning the number of bytes read in.
+pub fn read(buffer: &mut [u8]) -> usize {
+    get_console().read(buffer)
+}

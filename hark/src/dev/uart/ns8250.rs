@@ -260,6 +260,12 @@ impl<Io: UartIo> DriverBase for Base<Io> {
         LineStatusRegister::read_from(io).tx_register_empty()
     }
 
+    fn read_byte(io: &Self::Io) -> Option<u8> {
+        LineStatusRegister::read_from(io)
+            .data_ready()
+            .then(|| *RxBufferRegister::read_from(io))
+    }
+
     fn fill_fifo(io: &Io, state: &State, bytes: &mut impl Iterator<Item = u8>) -> bool {
         let mut space = state.fifo_depth;
         while space > 0 {

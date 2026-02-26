@@ -17,14 +17,23 @@ impl Console for SbiDebugConsole {
         let _ = write!(w, "SBI debug console");
     }
 
-    fn write(&self, bytes: &[u8]) {
-        let mut remaining = bytes.len();
-        while remaining > 0 {
+    fn write(&self, mut bytes: &[u8]) {
+        while !bytes.is_empty() {
             match sbi::debug_console_write(bytes) {
-                Ok(written) => remaining -= written,
+                Ok(written) => bytes = &bytes[written..],
                 Err(sbi::Error::DENIED) => break,
                 _ => {}
             }
         }
+    }
+
+    fn read_byte(&self) -> Option<u8> {
+        let byte = 0u8;
+        let written = sbi::debug_console_read(&mut [byte]).ok()?;
+        (written == 1).then_some(byte)
+    }
+
+    fn read(&self, buffer: &mut [u8]) -> usize {
+        sbi::debug_console_read(buffer).ok().unwrap_or(0)
     }
 }

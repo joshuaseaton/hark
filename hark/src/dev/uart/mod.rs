@@ -22,6 +22,7 @@ pub trait DriverBase {
     fn describe(w: &mut impl fmt::Write, state: &Self::State);
     fn init(io: &Self::Io, state: &mut Self::State);
     fn tx_ready(io: &Self::Io) -> bool;
+    fn read_byte(io: &Self::Io) -> Option<u8>;
 
     // Writes as many bytes to the FIFO as possible, returning true if it was
     // able to fill it fully, and thus false if the iterator was exhausted.
@@ -61,6 +62,11 @@ impl<Base: DriverBase> Console for Driver<Base> {
                 break;
             }
         }
+    }
+
+    #[inline]
+    fn read_byte(&self) -> Option<u8> {
+        Base::read_byte(&self.io)
     }
 }
 
