@@ -45,9 +45,11 @@ layout!({
     {
         #[cfg(target_pointer_width = "64")]
         {
-            let sd: Bit<63>; // State Dirty
+            /// *S*tate *D*irty.
+            let sd: Bit<63>;
             let _: Bits<62, 34>;
-            let uxl: Bits<33, 32, Xlen>; // UXLEN
+            /// *UXL*EN.
+            let uxl: Bits<33, 32, Xlen>;
             let _: Bit<31>;
         }
         #[cfg(target_pointer_width = "32")]
@@ -59,19 +61,28 @@ layout!({
         let sdt: Bit<24>;
         let spelp: Bit<23>;
         let _: Bits<22, 20>;
-        let mxr: Bit<19>; // Make eXecutable Readable
-        let sum: Bit<18>; // Supervisor User Memory
+        /// *M*ake e*X*ecutable *R*eadable.
+        let mxr: Bit<19>;
+        /// *S*upervisor *U*ser *M*emory.
+        let sum: Bit<18>;
         let _: Bit<17>;
-        let xs: Bits<16, 15, StatusExtState>; // other eXtension State
-        let fs: Bits<14, 13, StatusExtState>; // F extension State
+        /// Other e*X*tension *S*tate.
+        let xs: Bits<16, 15, StatusExtState>;
+        /// *F* extension *S*tate.
+        let fs: Bits<14, 13, StatusExtState>;
         let _: Bits<12, 11>;
-        let vs: Bits<10, 9, StatusExtState>; // V extension State
-        let spp: Bit<8>; // Supervisor Previous Privilege
+        /// *V* extension *S*tate.
+        let vs: Bits<10, 9, StatusExtState>;
+        /// *S*upervisor *P*revious *P*rivilege.
+        let spp: Bit<8>;
         let _: Bit<7>;
-        let ube: Bit<6>; // User Big-Endian
-        let spie: Bit<5>; // Supervisor Previous Interrupt Enable
+        /// *U*ser *B*ig-*E*ndian.
+        let ube: Bit<6>;
+        /// *S*upervisor *P*revious *I*nterrupt *E*nable.
+        let spie: Bit<5>;
         let _: Bits<4, 3>;
-        let sie: Bit<1>; // Supervisor Interrupt Enable
+        /// *S*upervisor *I*nterrupt *E*nable.
+        let sie: Bit<1>;
         let _: Bit<0>;
     }
 });
@@ -81,10 +92,14 @@ layout!({
     #[csr(sie)]
     pub struct Sie(usize);
     {
-        let lcofie: Bit<13>; // Local Counter OverFlow Interrupt Enable
-        let seie: Bit<9>; // Supervisor External Interrupt Enable
-        let stie: Bit<5>; // Supervisor Timer Interrupt Enable
-        let ssie: Bit<1>; // Supervisor Software Interrupt Enable
+        /// *L*ocal *C*ounter *O*ver*F*low *I*nterrupt *E*nable.
+        let lcofie: Bit<13>;
+        /// *S*upervisor *E*xternal *I*nterrupt *E*nable.
+        let seie: Bit<9>;
+        /// *S*upervisor *T*imer *I*nterrupt *E*nable.
+        let stie: Bit<5>;
+        /// *S*upervisor *S*oftware *I*nterrupt *E*nable.
+        let ssie: Bit<1>;
     }
 });
 
@@ -323,17 +338,26 @@ layout!({
     {
         #[cfg(target_pointer_width = "64")]
         {
-            let sd: Bit<63>; // State Dirty
+            /// *S*tate *D*irty.
+            let sd: Bit<63>;
             let _: Bits<62, 43>;
-            let mdt: Bit<42>; // Machine Double Trap
-            let mpelp: Bit<41>; // Machine Previous Expected Landing Pad
+            /// *M*achine *D*ouble *T*rap.
+            let mdt: Bit<42>;
+            /// *M*achine *P*revious *E*xpected *L*anding *P*ad.
+            let mpelp: Bit<41>;
             let _: Bit<40>;
-            let mpv: Bit<39>; // Machine Previous Virtualization mode
-            let gva: Bit<38>; // Guest Virtual Address
-            let mbe: Bit<37>; // Machine Big-Endian
-            let sbe: Bit<36>; // Supervisor Big-Endian
-            let sxl: Bits<35, 34>; // SXLEN
-            let uxl: Bits<33, 32, Xlen>; // UXLEN
+            /// *M*achine *P*revious *V*irtualization mode.
+            let mpv: Bit<39>;
+            /// *G*uest *V*irtual *A*ddress.
+            let gva: Bit<38>;
+            /// *M*achine *B*ig-*E*ndian.
+            let mbe: Bit<37>;
+            /// *S*upervisor *B*ig-*E*ndian.
+            let sbe: Bit<36>;
+            /// *SXL*EN.
+            let sxl: Bits<35, 34>;
+            /// *UXL*EN.
+            let uxl: Bits<33, 32, Xlen>;
             let _: Bit<31>;
         }
         #[cfg(target_pointer_width = "32")]
@@ -342,26 +366,44 @@ layout!({
         }
 
         let _: Bits<30, 25>;
-        let sdt: Bit<24>; // Software Double Trap
-        let spelp: Bit<23>; // Supervisor Previous Expected Landing Pad
-        let tsr: Bit<22>; // Trap SRet
-        let tw: Bit<21>; // Timeout Wait
-        let tvm: Bit<20>; // Trap Virtual Memory
-        let mxr: Bit<19>; // Make eXecutable Readable
-        let sum: Bit<18>; // Supervisor User Memory
-        let mprv: Bit<17>; // Modify PRiVilege
-        let xs: Bits<16, 15, StatusExtState>; // other eXtension State
-        let fs: Bits<14, 13, StatusExtState>; // F extension State
-        let mpp: Bits<12, 11>; // Machine Previous Privilege
-        let vs: Bits<10, 9, StatusExtState>; // V extension State
-        let spp: Bit<8>; // Supervisor Previous Privilege
-        let mpie: Bit<7>; // Machine Previous Interrupt Enable
-        let ube: Bit<6>; // User Big-Endian
-        let spie: Bit<5>; // Supervisor Previous Interrupt Enable
+        /// *S*oftware *D*ouble *T*rap.
+        let sdt: Bit<24>;
+        /// *S*upervisor *P*revious *E*xpected *L*anding *P*ad.
+        let spelp: Bit<23>;
+        /// *T*rap *SR*et.
+        let tsr: Bit<22>;
+        /// *T*imeout *W*ait.
+        let tw: Bit<21>;
+        /// *T*rap *V*irtual *M*emory.
+        let tvm: Bit<20>;
+        /// *M*ake e*X*ecutable *R*eadable.
+        let mxr: Bit<19>;
+        /// *S*upervisor *U*ser *M*emory.
+        let sum: Bit<18>;
+        /// *M*odify *PR*i*V*ilege.
+        let mprv: Bit<17>;
+        /// Other e*X*tension *S*tate.
+        let xs: Bits<16, 15, StatusExtState>;
+        /// *F* extension *S*tate.
+        let fs: Bits<14, 13, StatusExtState>;
+        /// *M*achine *P*revious *P*rivilege.
+        let mpp: Bits<12, 11>;
+        /// *V* extension *S*tate.
+        let vs: Bits<10, 9, StatusExtState>;
+        /// *S*upervisor *P*revious *P*rivilege.
+        let spp: Bit<8>;
+        /// *M*achine *P*revious *I*nterrupt *E*nable.
+        let mpie: Bit<7>;
+        /// *U*ser *B*ig-*E*ndian.
+        let ube: Bit<6>;
+        /// *S*upervisor *P*revious *I*nterrupt *E*nable.
+        let spie: Bit<5>;
         let _: Bit<4>;
-        let mie: Bit<3>; // Machine Interrupt Enable
+        /// *M*achine *I*nterrupt *E*nable.
+        let mie: Bit<3>;
         let _: Bit<2>;
-        let sie: Bit<1>; // Supervisor Interrupt Enable
+        /// *S*upervisor *I*nterrupt *E*nable.
+        let sie: Bit<1>;
         let _: Bit<0>;
     }
 });
@@ -379,32 +421,58 @@ layout!({
         {
             let _: Bits<28, 26> = 0;
         }
-        let z: Bit<25> = 0; // Reserved
-        let y: Bit<24> = 0; // Reserved
-        let x: Bit<23>; // Non-standard extensions
-        let w: Bit<22> = 0; // Reserved
-        let v: Bit<21>; // Vector
-        let u: Bit<20>; // User mode
-        let t: Bit<19> = 0; // Reserved
-        let s: Bit<18>; // Supervisor mode
-        let r: Bit<17> = 0; // Reserved
-        let q: Bit<16>; // Quad-precision floating point
-        let p: Bit<15>; // Tenatively reserved for Packed-SIMD
-        let o: Bit<14> = 0; // Reserved
-        let n: Bit<13>; // Tentatively reserved for user-level interrupts
-        let m: Bit<12>; // Integer multiply/divide
-        let l: Bit<11> = 0; // Reserved
-        let k: Bit<10> = 0; // Reserved
-        let j: Bit<9> = 0; // Reserved
-        let i: Bit<8>; // RV32I/64I base ISA
-        let h: Bit<7>; // Hypervisor
-        let g: Bit<6> = 0; // Reserved
-        let f: Bit<5>; // Single-precision floating-point
-        let e: Bit<4>; // RV32E/64E base ISA
-        let d: Bit<3>; // Double-precision floating-point
-        let c: Bit<2>; // Compressed
-        let b: Bit<1>; // B
-        let a: Bit<0>; // Atomic
+        /// Reserved.
+        let z: Bit<25> = 0;
+        /// Reserved.
+        let y: Bit<24> = 0;
+        /// Non-standard e*X*tensions.
+        let x: Bit<23>;
+        /// Reserved.
+        let w: Bit<22> = 0;
+        /// *V*ector.
+        let v: Bit<21>;
+        /// *U*ser mode.
+        let u: Bit<20>;
+        /// Reserved.
+        let t: Bit<19> = 0;
+        /// *S*upervisor mode.
+        let s: Bit<18>;
+        /// Reserved.
+        let r: Bit<17> = 0;
+        /// *Q*uad-precision floating point.
+        let q: Bit<16>;
+        /// Tentatively reserved for *P*acked-SIMD.
+        let p: Bit<15>;
+        /// Reserved.
+        let o: Bit<14> = 0;
+        /// Tentatively reserved for user-level interrupts.
+        let n: Bit<13>;
+        /// Integer *m*ultiply/divide.
+        let m: Bit<12>;
+        /// Reserved.
+        let l: Bit<11> = 0;
+        /// Reserved.
+        let k: Bit<10> = 0;
+        /// Reserved.
+        let j: Bit<9> = 0;
+        /// RV32*I*/64*I* base ISA.
+        let i: Bit<8>;
+        /// *H*ypervisor.
+        let h: Bit<7>;
+        /// Reserved.
+        let g: Bit<6> = 0;
+        /// Single-precision *f*loating-point.
+        let f: Bit<5>;
+        /// RV32*E*/64*E* base ISA.
+        let e: Bit<4>;
+        /// *D*ouble-precision floating-point.
+        let d: Bit<3>;
+        /// *C*ompressed.
+        let c: Bit<2>;
+        /// *B*.
+        let b: Bit<1>;
+        /// *A*tomic.
+        let a: Bit<0>;
     }
 });
 
