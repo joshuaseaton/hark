@@ -119,10 +119,12 @@ layout!({
     {
         #[cfg(target_pointer_width = "64")]
         {
+            #[unshifted]
             let base: Bits<63, 2>;
         }
         #[cfg(target_pointer_width = "32")]
         {
+            #[unshifted]
             let base: Bits<31, 2>;
         }
         let mode: Bits<1, 0, TrapVectorMode>;
@@ -498,10 +500,12 @@ layout!({
     {
         #[cfg(target_pointer_width = "64")]
         {
+            #[unshifted]
             let base: Bits<63, 2>;
         }
         #[cfg(target_pointer_width = "32")]
         {
+            #[unshifted]
             let base: Bits<31, 2>;
         }
         let mode: Bits<1, 0, TrapVectorMode>;

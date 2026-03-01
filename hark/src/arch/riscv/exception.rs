@@ -65,7 +65,8 @@ cfg_if::cfg_if! {
 
 pub(super) fn init() {
     let entry = (exception_entry as *const ()).addr();
-    Xtvec::from(entry) // TODO... unshifted!
+    Xtvec::from(0)
+        .set_base(entry)
         .set_mode(TrapVectorMode::Direct)
         .write();
 
