@@ -33,6 +33,7 @@ def main [
     let toml = {
         env: { HARK_BOARD: $board }
         build: { target: [$target_json] }
+        unstable: {json-target-spec: true }
     } | to toml
 
     let set_board = [scripts set-board] | path join
