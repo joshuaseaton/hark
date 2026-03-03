@@ -12,7 +12,7 @@ use libarch::riscv::csr::{
 };
 use regio::Register as _;
 
-use crate::arch::riscv::{Regs, disable_interrupts, enable_interrupts};
+use crate::arch::riscv::{Regs, enable_interrupts};
 use crate::kernel::panic_common;
 use crate::platform;
 use crate::{print, println};
@@ -254,14 +254,10 @@ extern "C" fn handle_interrupt(frame: &TrapFrame) {
 fn handle_external_interrupt(frame: &TrapFrame) {
     let irq = platform::interrupt::claim_pending_irq();
 
-    // External interrupts are fully pre-emptible in Hark.
-    enable_interrupts();
     platform::interrupt::handle(irq);
-    disable_interrupts();
 
-    // Now that interrupts are disabled, we restore mepc and the
-    // mstatus.{mpie, mpp} ahead of the mret. Easier to do that here then in the
-    // assembly epilogue.
+    // We restore mepc and the mstatus.{mpie, mpp} ahead of the mret. Easier to
+    // do that here then in the assembly epilogue.
     Mepc::from(frame.regs.pc).write();
     Mstatus::modify(|status| {
         status
