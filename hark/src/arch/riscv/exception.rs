@@ -7,12 +7,12 @@
 use core::arch::naked_asm;
 use core::mem::offset_of;
 
-use libarch::riscv::csr::{ExceptionCode, InterruptCode, TrapVectorMode};
+use libarch::riscv::csr::{
+    ExceptionCode, InterruptCode, Mcause, Mepc, Mie, Mstatus, Mtvec, TrapVectorMode,
+};
 use regio::Register as _;
 
-use crate::arch::riscv::{
-    Regs, Xcause, Xepc, Xie, Xstatus, Xtvec, disable_interrupts, enable_interrupts,
-};
+use crate::arch::riscv::{Regs, disable_interrupts, enable_interrupts};
 use crate::kernel::panic_common;
 use crate::platform;
 use crate::{print, println};
@@ -27,67 +27,25 @@ cfg_if::cfg_if! {
     }
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(riscv_m_mode)] {
-        macro_rules! read_xepc_into_t0 { () => { "csrr t0, mepc" }; }
-        macro_rules! read_xcause_into_t0 { () => { "csrr t0, mcause" }; }
-        macro_rules! read_xstatus_into_t0 { () => { "csrr t0, mstatus" }; }
-        macro_rules! read_xtval_into_t0 { () => { "csrr t0, mtval" }; }
-
-        macro_rules! xret { () => { "mret" }; }
-
-        fn restore_xstatus_bits(old: Xstatus) {
-            Xstatus::modify(|reg| {
-                reg.set_mpie(old.mpie()).set_mpp(old.mpp());
-            });
-        }
-
-        const XSTATUS: &str = "sstatus";
-    } else {
-        use libarch::riscv::csr::Stimecmp;
-
-        macro_rules! read_xepc_into_t0 { () => { "csrr t0, sepc" }; }
-        macro_rules! read_xcause_into_t0 { () => { "csrr t0, scause" }; }
-        macro_rules! read_xstatus_into_t0 { () => { "csrr t0, sstatus" }; }
-        macro_rules! read_xtval_into_t0 { () => { "csrr t0, stval" }; }
-
-        macro_rules! xret { () => { "sret" }; }
-
-        fn restore_xstatus_bits(old: Xstatus) {
-            Xstatus::modify(|reg| {
-                reg.set_spie(old.spie()).set_spp(old.spp());
-            });
-        }
-
-        const XSTATUS: &str = "mstatus";
-    }
-}
-
 pub(super) fn init() {
     let entry = (exception_entry as *const ()).addr();
-    Xtvec::from(0)
+    Mtvec::from(0)
         .set_base(entry)
         .set_mode(TrapVectorMode::Direct)
         .write();
 
     // Enable all supported interrupts.
     // TODO: support more!
-    cfg_if::cfg_if! {
-        if #[cfg(riscv_m_mode)] {
-            Xie::from(0).set_meie(true).write();
-        } else {
-            Xie::from(0).set_stie(true).set_seie(true).write();
-        }
-    }
+    Mie::from(0).set_meie(true).write();
     enable_interrupts();
 }
 
 #[repr(C)]
 struct TrapFrame {
     regs: Regs,
-    xstatus: Xstatus,
-    xcause: Xcause,
-    xtval: usize,
+    mstatus: Mstatus,
+    mcause: Mcause,
+    mtval: usize,
     _padding: usize,
 }
 
@@ -102,7 +60,7 @@ extern "C" fn exception_entry() {
         // We save registers onto the stack, making sure not to trash any before
         // we do.
         //
-        // Save pc for later, when we have a spare register for reading in xepc.
+        // Save pc for later, when we have a spare register for reading in mepc.
         "  addi sp, sp, -{sizeof_frame}",
         store!("ra, {ra_offset}(sp)"),
         // We've just modified sp, so defer recording the original as well.
@@ -139,21 +97,21 @@ extern "C" fn exception_entry() {
         // that.
         "  addi t0, sp, {sizeof_frame}",
         store!("t0, {sp_offset}(sp)"),
-        read_xepc_into_t0!(),
+        "  csrr t0, mepc",
         store!("t0, {pc_offset}(sp)"),
-        read_xstatus_into_t0!(),
-        store!("t0, {xstatus_offset}(sp)"),
-        read_xtval_into_t0!(),
-        store!("t0, {xtval_offset}(sp)"),
-        read_xcause_into_t0!(), // Intentionally last.
-        store!("t0, {xcause_offset}(sp)"),
+        "  csrr t0, mstatus",
+        store!("t0, {mstatus_offset}(sp)"),
+        "  csrr t0, mtval",
+        store!("t0, {mtval_offset}(sp)"),
+        "  csrr t0, mcause",  // Intentionally last.
+        store!("t0, {mcause_offset}(sp)"),
 
         // Now we have a TrapFrame that we can pass to handle_exception() and
         // handle_interrupt().
         "  mv a0, sp",
         // Before calling into Rust code we zero the frame pointer.
         "  mv fp, x0",
-        // Recall that t0 still holds xcause. If the most-significant bit is
+        // Recall that t0 still holds mcause. If the most-significant bit is
         // set, then this is an interrupt. We can test for this by seeing if the
         // number is "less than zero".
         r#"
@@ -201,7 +159,7 @@ extern "C" fn exception_entry() {
         load!("t6, {t6_offset}(sp)"),
         // Restore sp last, deallocating the frame.
         load!("sp, {sp_offset}(sp)"),
-        xret!(),
+        "  mret",
         sizeof_frame = const size_of::<TrapFrame>(),
         pc_offset = const offset_of!(Regs, pc),
         ra_offset = const offset_of!(Regs, ra),
@@ -235,19 +193,19 @@ extern "C" fn exception_entry() {
         t4_offset = const offset_of!(Regs, t4),
         t5_offset = const offset_of!(Regs, t5),
         t6_offset = const offset_of!(Regs, t6),
-        xstatus_offset = const offset_of!(TrapFrame, xstatus),
-        xcause_offset = const offset_of!(TrapFrame, xcause),
-        xtval_offset = const offset_of!(TrapFrame, xtval),
+        mstatus_offset = const offset_of!(TrapFrame, mstatus),
+        mcause_offset = const offset_of!(TrapFrame, mcause),
+        mtval_offset = const offset_of!(TrapFrame, mtval),
     )
 }
 
 #[unsafe(no_mangle)]
 extern "C" fn handle_exception(frame: &TrapFrame) -> ! {
     panic_common(frame.regs.s0, Some(frame.regs.pc), || {
-        let code = frame.xcause.exception_code();
+        let code = frame.mcause.exception_code();
         print!("Exception: {code}");
         match code {
-            // In these cases xtval holds the associated address.
+            // In these cases mtval holds the associated address.
             ExceptionCode::INSTRUCTION_ADDRESS_MISALIGNED
             | ExceptionCode::INSTRUCTION_ACCESS_FAULT
             | ExceptionCode::BREAKPOINT
@@ -257,13 +215,13 @@ extern "C" fn handle_exception(frame: &TrapFrame) -> ! {
             | ExceptionCode::INSTRUCTION_PAGE_FAULT
             | ExceptionCode::LOAD_PAGE_FAULT
             | ExceptionCode::STORE_OR_AMO_PAGE_FAULT => {
-                println!(" (@ {:#x})", frame.xtval);
+                println!(" (@ {:#x})", frame.mtval);
             }
             _ => {
-                if frame.xtval == 0 {
+                if frame.mtval == 0 {
                     print!("\n");
                 } else {
-                    println!(" ({:#x})", frame.xtval);
+                    println!(" ({:#x})", frame.mtval);
                 }
             }
         }
@@ -273,29 +231,21 @@ extern "C" fn handle_exception(frame: &TrapFrame) -> ! {
 }
 
 // On exit of this function, interrupts will be disabled and the CSR state
-// relevant to xret (i.e., xepc, and the xpie and xpp bits of xstatus) will have
+// relevant to mret (i.e., mepc, and the mpie and mpp bits of mstatus) will have
 // been preserved.
 #[unsafe(no_mangle)]
 extern "C" fn handle_interrupt(frame: &TrapFrame) {
-    let code = frame.xcause.interrupt_code();
+    let code = frame.mcause.interrupt_code();
     match code {
-        #[cfg(not(riscv_m_mode))]
         InterruptCode::SUPERVISOR_TIMER_INTERRUPT => {
-            // TODO: no magic numbers and this should be downstream of a more
-            // general policy.
-            Stimecmp::from(*libarch::riscv::csr::Time::read() + 50_000_000).write();
+            // TODO:
         }
-        #[cfg(not(riscv_m_mode))]
-        InterruptCode::SUPERVISOR_EXTERNAL_INTERRUPT => {
-            handle_external_interrupt(frame);
-        }
-        #[cfg(riscv_m_mode)]
         InterruptCode::MACHINE_EXTERNAL_INTERRUPT => {
             handle_external_interrupt(frame);
         }
         _ => panic_common(frame.regs.s0, Some(frame.regs.pc), || {
             println!("Unsupported interrupt: {code}");
-            println!("{XSTATUS}: {:#x}", *frame.xstatus);
+            println!("mstatus: {:#x}", *frame.mstatus);
             println!("Registers:\n{}", frame.regs);
         }),
     }
@@ -309,9 +259,13 @@ fn handle_external_interrupt(frame: &TrapFrame) {
     platform::interrupt::handle(irq);
     disable_interrupts();
 
-    // Now that interrupts are disabled, we restore xepc and the
-    // xstatus.{xpie, xpp} ahead of the xret. Easier to do that here then in the
+    // Now that interrupts are disabled, we restore mepc and the
+    // mstatus.{mpie, mpp} ahead of the mret. Easier to do that here then in the
     // assembly epilogue.
-    Xepc::from(frame.regs.pc).write();
-    restore_xstatus_bits(frame.xstatus);
+    Mepc::from(frame.regs.pc).write();
+    Mstatus::modify(|status| {
+        status
+            .set_mpie(frame.mstatus.mpie())
+            .set_mpp(frame.mstatus.mpp());
+    });
 }

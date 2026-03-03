@@ -39,17 +39,13 @@ def main [] {
         | get 0.executable
         | path relative-to $env.PWD
 
-    mut command = [$qemu -machine virt -nographic -kernel $system]
+    mut command = [$qemu -machine virt -bios none -nographic -kernel $system]
 
     # Hark's build script will have written out the evaluation of the board spec
     # to the top-level artifact directory.
     let spec = [target $board debug spec.json] | path join | open
     match ($spec | get arch.name) {
-        "riscv" => {
-            if ($spec | get arch.entryMode) == "m" {
-                $command ++= [-bios none]
-            }
-        }
+        "riscv" => {}
     }
 
     # Set up .build-id directory for llvm-symbolizer --filter-markup.

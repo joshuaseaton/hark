@@ -4,21 +4,15 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-cfg_if::cfg_if! {
-    if #[cfg(all(not(riscv_m_mode), riscv_sbi_console))] {
-        mod sbi;
-        pub(crate) use sbi::*;
-    }
-}
-
 mod exception;
 mod start;
 
 use core::{fmt, mem, ptr};
 
+use libarch::riscv::csr::{Marchid, Mhartid, Mimpid, Misa, Mscratch, Mstatus, Mvendorid};
 use regio::Register as _;
 
-use crate::println;
+use crate::{print, println};
 
 #[used]
 static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
@@ -119,91 +113,44 @@ pub(super) fn get_percpu() -> &'static PerCpu {
 #[inline]
 pub fn init() {
     let percpu = get_percpu();
-    Xscratch::from(ptr::from_ref(percpu).addr()).write();
+    Mscratch::from(ptr::from_ref(percpu).addr()).write();
     exception::init();
 }
 
-#[cfg(riscv_m_mode)]
-mod xmode {
-    use super::*;
-
-    pub(super) use libarch::riscv::csr::{Marchid, Mhartid, Mimpid, Misa, Mvendorid};
-    pub(super) use libarch::riscv::csr::{
-        Mcause as Xcause, Mepc as Xepc, Mie as Xie, Mscratch as Xscratch, Mstatus as Xstatus,
-        Mtvec as Xtvec,
-    };
-
-    use crate::print;
-
-    pub fn print_machine_context() {
-        println!("Entry mode: M");
-        println!("Boot hart ID: {:#}", *Mhartid::read());
-        println!(
-            "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
-            *Mvendorid::read(),
-            *Marchid::read(),
-            *Mimpid::read()
-        );
-        print!("misa: ");
-        let mut first = true;
-        for (metadata, value) in Misa::read().iter().rev() {
-            if value == 0 {
-                continue;
-            }
-            if !first {
-                print!(",");
-            }
-            print!("{}", metadata.name);
-            first = false;
+pub fn print_machine_context() {
+    println!("Boot hart ID: {:#}", *Mhartid::read());
+    println!(
+        "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
+        *Mvendorid::read(),
+        *Marchid::read(),
+        *Mimpid::read()
+    );
+    print!("misa: ");
+    let mut first = true;
+    for (metadata, value) in Misa::read().iter().rev() {
+        if value == 0 {
+            continue;
         }
-        print!("\n");
+        if !first {
+            print!(",");
+        }
+        print!("{}", metadata.name);
+        first = false;
     }
-
-    #[inline]
-    pub fn current_cpu_number() -> u32 {
-        *Mhartid::read() as u32
-    }
-
-    #[inline]
-    pub fn enable_interrupts() {
-        Xstatus::from(0).set_mie(true).atomic_set_bits();
-    }
-
-    #[inline]
-    pub fn disable_interrupts() {
-        Xstatus::from(0).set_mie(true).atomic_clear_bits();
-    }
+    print!("\n");
 }
 
-#[cfg(not(riscv_m_mode))]
-mod xmode {
-    use super::*;
-    use start::BOOT_HART_ID;
-
-    pub(super) use libarch::riscv::csr::{
-        Scause as Xcause, Sepc as Xepc, Sie as Xie, Sscratch as Xscratch, Sstatus as Xstatus,
-        Stvec as Xtvec,
-    };
-
-    pub fn print_machine_context() {
-        println!("Entry mode: S");
-        println!("Boot hart ID: {BOOT_HART_ID:#}");
-    }
-
-    #[inline]
-    pub fn current_cpu_number() -> u32 {
-        BOOT_HART_ID as u32
-    }
-
-    #[inline]
-    pub fn enable_interrupts() {
-        Xstatus::from(0).set_sie(true).atomic_set_bits();
-    }
-
-    #[inline]
-    pub fn disable_interrupts() {
-        Xstatus::from(0).set_sie(true).atomic_clear_bits();
-    }
+#[inline]
+pub fn current_cpu_number() -> u32 {
+    *Mhartid::read() as u32
 }
 
-pub use xmode::*;
+#[inline]
+pub fn enable_interrupts() {
+    Mstatus::from(0).set_mie(true).atomic_set_bits();
+}
+
+#[inline]
+pub fn disable_interrupts() {
+    Mstatus::from(0).set_mie(true).atomic_clear_bits();
+}

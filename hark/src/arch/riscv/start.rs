@@ -5,19 +5,9 @@
 // https://opensource.org/licenses/MIT
 
 use core::arch::{global_asm, naked_asm};
+use libarch::riscv::csr::Mstatus;
 
 const STACK_SIZE: u64 = 0x2000; // 8KiB
-
-cfg_if::cfg_if! {
-    if #[cfg(riscv_m_mode)] {
-        use libarch::riscv::csr::Mstatus;
-    } else {
-        use libarch::riscv::csr::Sstatus;
-
-        #[unsafe(no_mangle)]
-        pub(crate) static BOOT_HART_ID: usize = 0;
-    }
-}
 
 // TODO: Define this via a more generic asm object macro?
 global_asm!(
@@ -49,7 +39,6 @@ extern "C" fn _start() {
         // Clear the gp register in case anything tries to use it.
         mv gp, zero
         "#,
-        #[cfg(riscv_m_mode)]
         r#"
         // Mask all interrupts in case a prior bootloader left them.
         csrc mstatus, {mstatus_mie}
@@ -58,28 +47,7 @@ extern "C" fn _start() {
         // Reset the trap vector base address register, just in case a prior
         // bootloader left it set.
         csrw mtvec, zero
-        "#,
-        #[cfg(not(riscv_m_mode))]
-        r#"
-        // Mask all interrupts in case the bootloader left them on.
-        csrc sstatus, {sstatus_sie}
-        csrw sie, zero
 
-        // Reset the trap vector base address register in case the
-        // bootloader left an old vector in place (which we might already be
-        // clobbering, and almost certainly will be violating the
-        // assumptions of).
-        csrw stvec, zero
-
-        // Disable the MMU just in case it was left on (it should not have
-        // been).
-        csrw satp, zero
-
-        // Save the boot hart ID, passed to us by the bootloader in a0.
-        la t0, BOOT_HART_ID
-        sw a0, (t0)
-        "#,
-        r#"
         // Clear .bss. The linker script ensures that the start and end are
         // both 8-byte aligned.
         la t0, __bss_start
@@ -97,9 +65,6 @@ extern "C" fn _start() {
         call hark_main
         "#,
         word_size = const size_of::<usize>(),
-        #[cfg(riscv_m_mode)]
         mstatus_mie = const Mstatus::MIE_BIT,
-        #[cfg(not(riscv_m_mode))]
-        sstatus_sie = const Sstatus::SIE_BIT,
     )
 }

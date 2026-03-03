@@ -17,6 +17,7 @@ struct Spec {
     platform: String,
     arch: Arch,
     load_address: i64,
+    #[allow(unused)]
     options: Options,
 }
 
@@ -30,27 +31,17 @@ enum Arch {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ArchRiscv {
-    entry_mode: RiscvEntryMode,
-}
-
-#[derive(Deserialize, Eq, PartialEq)]
-#[serde(rename_all = "lowercase")]
-enum RiscvEntryMode {
-    M,
-    S,
-}
+struct ArchRiscv {}
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Options {
-    riscv_sbi_console: bool,
-}
+struct Options {}
 
 fn declare_input(path: impl Display) {
     println!("cargo::rerun-if-changed={path}");
 }
 
+#[allow(unused)]
 fn set_cfg_name(key: &str, conditon: bool) {
     if conditon {
         println!("cargo::rustc-cfg={key}");
@@ -138,15 +129,7 @@ fn main() {
 
     set_cfg_pair("platform", spec.platform, "any()");
     match &spec.arch {
-        Arch::Riscv(riscv) => {
-            let m_mode = riscv.entry_mode == RiscvEntryMode::M;
-            set_cfg_name("riscv_m_mode", m_mode);
-            assert!(
-                !(spec.options.riscv_sbi_console && m_mode),
-                "No SBI in machine mode, so can't use it for a console"
-            );
-            set_cfg_name("riscv_sbi_console", spec.options.riscv_sbi_console);
-        }
+        Arch::Riscv(_) => {}
     }
 
     let linker_script = env::current_dir().unwrap().join("src").join("kernel.ld");
@@ -157,7 +140,7 @@ fn main() {
         format!("--defsym=LOAD_ADDRESS={:#x}", spec.load_address),
         "--build-id".to_string(),
     ];
-    hark_build::emit_metadata_for_system(&link_args);
+    hark_build::emit_metadata_for_system(link_args.as_slice());
 
     set_env("HARK_VERSION", env!("CARGO_PKG_VERSION"));
 

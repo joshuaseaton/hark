@@ -97,12 +97,7 @@ impl ControllerBase for Plic {
 
     #[inline]
     fn cpu_number_to_target_id(cpu_num: u32) -> Context {
-        let cpu_num = cpu_num as usize;
-        if cfg!(riscv_m_mode) {
-            Context(2 * cpu_num)
-        } else {
-            Context(2 * cpu_num + 1)
-        }
+        Context(2 * (cpu_num as usize))
     }
 
     #[inline]

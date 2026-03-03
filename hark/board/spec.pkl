@@ -22,9 +22,6 @@ hidden const rawBoardOptions = optionsMap.getOrNull("board") ?? new Dynamic {}
 class ArchRiscv {
   // Used as a deserialization tag.
   fixed name: String = "riscv"
-
-  // The mode we are booted in: "m" for machine and "s" for supervisor.
-  entryMode: "m" | "s"
 }
 
 //

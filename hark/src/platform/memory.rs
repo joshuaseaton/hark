@@ -54,28 +54,18 @@ pub fn init(memory: &[Range]) {
         };
     }
 
-    // Throw out any memory before the image in S mode to account for the
-    // unknown of where resident firmware like SBI may have been loaded.
-    //
-    // TODO: do better.
+    // While it is a safe assumption that we were loaded at the beginning of
+    // RAM, we check for memory before the load image just in case.
     let mut talc = ALLOCATOR.lock();
     for range in memory {
-        // Range lies strictly before image.
-        if range.end() < image_start {
-            #[cfg(riscv_m_mode)]
-            claim!(talc, range.start, range.size);
-            continue;
-        }
-
-        // Range lies strictly after image.
-        if image_end < range.start {
+        // Range lies strictly before or after the image.
+        if range.end() < image_start || image_end < range.start {
             claim!(talc, range.start, range.size);
             continue;
         }
 
         // Else, we have an overlap. Check for both front and back over-hangs.
         if range.start < image_start {
-            #[cfg(riscv_m_mode)]
             claim!(talc, range.start, image_start - range.start);
         }
         if image_end < range.end() {

@@ -9,18 +9,11 @@
 
 amends "spec.pkl"
 
-local class BoardOptions {
-  entryMode: "s" | "m" = "m"
-}
+local class BoardOptions {}
 local boardOpts = rawBoardOptions.toTyped(BoardOptions)
 
 platform = "qemu-virt-riscv"
 
-arch = new ArchRiscv {
-  entryMode = boardOpts.entryMode
-}
+arch = new ArchRiscv {}
 
-// When booted in supervisor mode, OpenSBI is loaded at the base of RAM and the
-// kernel (when a raw binary) is loaded by QEMU at a fixed offset.
-local loadOffset = if (boardOpts.entryMode == "m") 0 else 0x0040_0000
-loadAddress = 0x8000_0000 + loadOffset
+loadAddress = 0x8000_0000
