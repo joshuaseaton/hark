@@ -9,7 +9,9 @@ use core::arch::{global_asm, naked_asm};
 const STACK_SIZE: u64 = 0x2000; // 8KiB
 
 cfg_if::cfg_if! {
-    if #[cfg(not(riscv_m_mode))] {
+    if #[cfg(riscv_m_mode)] {
+        use libarch::riscv::csr::Mstatus;
+    } else {
         use libarch::riscv::csr::Sstatus;
 
         #[unsafe(no_mangle)]
@@ -46,6 +48,16 @@ extern "C" fn _start() {
 
         // Clear the gp register in case anything tries to use it.
         mv gp, zero
+        "#,
+        #[cfg(riscv_m_mode)]
+        r#"
+        // Mask all interrupts in case a prior bootloader left them.
+        csrc mstatus, {mstatus_mie}
+        csrw mie, zero
+
+        // Reset the trap vector base address register, just in case a prior
+        // bootloader left it set.
+        csrw mtvec, zero
         "#,
         #[cfg(not(riscv_m_mode))]
         r#"
@@ -85,6 +97,9 @@ extern "C" fn _start() {
         call hark_main
         "#,
         word_size = const size_of::<usize>(),
+        #[cfg(riscv_m_mode)]
+        mstatus_mie = const Mstatus::MIE_BIT,
         #[cfg(not(riscv_m_mode))]
-        sstatus_sie = const Sstatus::SIE_BIT)
+        sstatus_sie = const Sstatus::SIE_BIT,
+    )
 }
