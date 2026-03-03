@@ -6,7 +6,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT
 
-# Disassembles the example hark system.
+# Disassembles the example hark app.
 def main [] {
     $env.RUST_TARGET_PATH = [ $env.FILE_PWD .. hark board ] | path join
     ^cargo objdump -- --disassemble --demangle --line-numbers

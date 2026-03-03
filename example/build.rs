@@ -5,5 +5,5 @@
 // https://opensource.org/licenses/MIT
 
 fn main() {
-    hark_build::declare_system();
+    hark_build::declare_app();
 }
