@@ -12,6 +12,7 @@ use libarch::riscv::csr::{
 };
 use regio::Register as _;
 
+use crate::arch::riscv::timer;
 use crate::arch::riscv::{Regs, enable_interrupts};
 use crate::kernel::panic_common;
 use crate::platform;
@@ -237,8 +238,8 @@ extern "C" fn handle_exception(frame: &TrapFrame) -> ! {
 extern "C" fn handle_interrupt(frame: &TrapFrame) {
     let code = frame.mcause.interrupt_code();
     match code {
-        InterruptCode::SUPERVISOR_TIMER_INTERRUPT => {
-            // TODO:
+        InterruptCode::MACHINE_TIMER_INTERRUPT => {
+            timer::handle_exception();
         }
         InterruptCode::MACHINE_EXTERNAL_INTERRUPT => {
             handle_external_interrupt(frame);

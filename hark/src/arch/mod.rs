@@ -15,17 +15,16 @@ pub(crate) fn init() {
     backend::init();
 }
 
-// Prints generic machine context, as enumerated from the CPU.
-#[inline(never)]
-pub(crate) fn print_machine_context() {
-    backend::print_machine_context();
-}
-
 /// Returns the current CPU number.
 ///
 /// For RISC-V this is the hart ID.
 pub fn current_cpu_number() -> u32 {
     backend::current_cpu_number()
+}
+
+/// Returns the current time in CPU ticks.
+pub fn get_ticks() -> u64 {
+    backend::get_ticks()
 }
 
 /// Enables interrupts.

@@ -75,7 +75,6 @@ extern "C" fn hark_main() {
     print_console_info();
 
     arch::init();
-    arch::print_machine_context();
 
     platform::init_post_console();
 

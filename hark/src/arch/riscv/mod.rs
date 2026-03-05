@@ -6,6 +6,7 @@
 
 mod exception;
 mod start;
+mod timer;
 
 use core::{fmt, mem, ptr};
 
@@ -115,9 +116,12 @@ pub fn init() {
     let percpu = get_percpu();
     Mscratch::from(ptr::from_ref(percpu).addr()).write();
     exception::init();
+    timer::init();
+    print_machine_context();
 }
 
-pub fn print_machine_context() {
+#[inline(never)]
+fn print_machine_context() {
     println!("Boot hart ID: {:#}", *Mhartid::read());
     println!(
         "mvendorid, marchid, mimpid: {:#}, {:#}, {:#}",
@@ -138,11 +142,17 @@ pub fn print_machine_context() {
         first = false;
     }
     print!("\n");
+    println!("Current ticks: {:#x}", get_ticks());
 }
 
 #[inline]
 pub fn current_cpu_number() -> u32 {
     *Mhartid::read() as u32
+}
+
+#[inline]
+pub fn get_ticks() -> u64 {
+    timer::read_time()
 }
 
 #[inline]
