@@ -38,6 +38,7 @@ def main [
         | transpose key value
         | each { |setting|
             let flag = match $setting.key {
+                "cpu" => "-cpu",
                 "machine" => "-machine"
                 "memory" => "-m"
                 _ => { error make --unspanned $"unknown QEMU setting \"($setting.key)\"" }
