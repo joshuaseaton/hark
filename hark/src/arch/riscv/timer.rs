@@ -165,7 +165,7 @@ cfg_if::cfg_if! {
     }
 }
 
-pub struct Mtimer {
+struct Mtimer {
     time_io: TimeIo,
     timer_io: TimerIo,
 }

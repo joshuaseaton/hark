@@ -5,7 +5,7 @@
 // https://opensource.org/licenses/MIT
 
 pub mod debug;
-pub mod shell;
+pub(crate) mod shell;
 
 mod panic;
-pub use panic::*;
+pub(crate) use panic::*;

@@ -5,7 +5,7 @@
 // https://opensource.org/licenses/MIT
 
 pub mod console;
-pub mod interrupt;
+pub(crate) mod interrupt;
 mod memory;
 pub mod power;
 

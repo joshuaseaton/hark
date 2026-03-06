@@ -117,7 +117,7 @@ impl fmt::Display for Regs {
     }
 }
 
-pub(super) fn get_percpu() -> &'static PerCpu {
+pub fn get_percpu() -> &'static PerCpu {
     // TODO: SMP support.
     unsafe { &*&raw const PERCPU[0] }
 }
