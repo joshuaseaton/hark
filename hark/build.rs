@@ -4,38 +4,19 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use serde::Deserialize;
 use std::env;
 use std::fmt::Display;
-use std::fs::{File, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::fs;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+use serde::Deserialize;
+
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct Spec {
     platform: String,
-    arch: Arch,
     load_address: i64,
-    #[allow(unused)]
-    options: Options,
 }
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-#[serde(tag = "name")]
-enum Arch {
-    #[serde(rename = "riscv")]
-    Riscv(ArchRiscv),
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ArchRiscv {}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Options {}
 
 fn declare_input(path: impl Display) {
     println!("cargo::rerun-if-changed={path}");
@@ -58,81 +39,38 @@ fn set_env(key: &str, value: &str) {
     println!("cargo::rustc-env={key}={value}");
 }
 
-#[derive(Deserialize)]
-struct CargoMetadata {
-    target_directory: String,
-}
-
-fn final_artifact_dir() -> PathBuf {
-    let target = env::var("TARGET").unwrap();
-    let profile = env::var("PROFILE").unwrap();
-    let metadata_stdout = Command::new("cargo")
-        .arg("metadata")
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap()
-        .stdout
-        .unwrap();
-    let metadata: CargoMetadata = serde_json::from_reader(metadata_stdout).unwrap();
-    PathBuf::from(metadata.target_directory)
-        .join(target)
-        .join(profile)
-}
-
 fn main() {
-    let board_dir = PathBuf::from("board");
-    let board_pkl = if let Ok(board) = env::var("HARK_BOARD") {
-        board_dir.join(format!("{board}.pkl"))
-    } else {
-        PathBuf::from(
-            env::var("HARK_BOARD_PKL").expect("neither $HARK_BOARD nor $HARK_BOARD_PKL wer set!"),
-        )
+    let Ok(board_env) = env::var("HARK_BOARD") else {
+        panic!(concat!(
+            "$HARK_BOARD must be set either to the name of a supported board ",
+            "or the absolute path to a custom TOML board spec"
+        ));
     };
-    let spec_pkl = board_dir.join("spec.pkl");
-    declare_input(board_pkl.display());
-    declare_input(spec_pkl.display());
 
-    let mut pkl_args = vec![
-        "eval".to_string(),
-        "--format".to_string(),
-        "json".to_string(),
-        board_pkl.to_str().unwrap().to_string(),
-    ];
-    if let Ok(options) = env::var("HARK_OPTIONS")
-        && Path::new(&options).exists()
-    {
-        declare_input(&options);
-        pkl_args.push("--property".to_string());
-        pkl_args.push(format!("options={options}"));
-    }
+    let cwd = env::current_dir().unwrap();
+    let board = PathBuf::from(&board_env);
+    let board_toml = if board.is_absolute() {
+        board
+    } else {
+        cwd.clone()
+            .join("board")
+            .join(board_env)
+            .with_added_extension("toml")
+    };
+    assert!(
+        board_toml.exists(),
+        "$HARK_BOARD is invalid: {} does not exist",
+        board_toml.display()
+    );
 
-    // We write out the evaluated board specification to the final artifact
-    // directory for easy inspection and programmatic access later on.
-    let spec_json = final_artifact_dir().join("spec.json");
-    let spec_json_file = OpenOptions::new()
-        .create(true)
-        .truncate(true)
-        .read(true)
-        .write(true)
-        .open(&spec_json)
-        .unwrap();
-    Command::new("pkl")
-        .args(pkl_args)
-        .stdout(Stdio::from(spec_json_file))
-        .stderr(Stdio::inherit())
-        .output()
-        .unwrap();
+    declare_input(board_toml.display());
 
-    // Now we read it back in to parameterize the build.
-    let spec_json_file = File::open(spec_json).unwrap();
-    let spec: Spec = serde_json::from_reader(spec_json_file).unwrap();
+    let board_toml_contents = fs::read_to_string(board_toml).unwrap();
+    let spec: Spec = toml::from_str(&board_toml_contents).unwrap();
 
     set_cfg_pair("platform", spec.platform, "any()");
-    match &spec.arch {
-        Arch::Riscv(_) => {}
-    }
 
-    let linker_script = env::current_dir().unwrap().join("src").join("kernel.ld");
+    let linker_script = cwd.join("src").join("kernel.ld");
     declare_input(linker_script.display());
 
     let link_args = [

@@ -4,8 +4,5 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT
 
-include = [ { path = "board.toml", optional = true } ]
-
-[unstable]
-build-std = [ "alloc", "core" ]
-build-std-features = [ "compiler-builtins-mem" ]
+platform = "qemu-virt-riscv"
+load_address = 0x8000_0000

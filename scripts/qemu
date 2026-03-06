@@ -41,13 +41,6 @@ def main [] {
 
     mut command = [$qemu -machine virt -bios none -nographic -kernel $app]
 
-    # Hark's build script will have written out the evaluation of the board spec
-    # to the top-level artifact directory.
-    let spec = [target $board debug spec.json] | path join | open
-    match ($spec | get arch.name) {
-        "riscv" => {}
-    }
-
     # Set up .build-id directory for llvm-symbolizer --filter-markup.
     # TODO: Update llvm-symbolizer so that `llvm-symbolizer --obj $system` can
     # work without a .build-id directory. 
