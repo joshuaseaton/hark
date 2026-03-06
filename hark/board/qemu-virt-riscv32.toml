@@ -6,3 +6,7 @@
 
 platform = "qemu-virt-riscv"
 load_address = 0x8000_0000
+
+[qemu]
+machine = "virt"
+memory = "200M" # TODO: bring this down!

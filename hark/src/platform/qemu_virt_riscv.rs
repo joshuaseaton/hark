@@ -21,10 +21,10 @@ const PLIC_ADDR: usize = 0x0c00_0000;
 pub const MAX_IRQ: u32 = 96;
 
 pub const MEMORY_MAP: [memory::Range; 1] = [
-    // TODO: size based on compile-time configuration?
+    // Constrained to 200KiB for discipline's sake.
     memory::Range {
         start: 0x8000_0000,
-        size: 0x800_0000,
+        size: 0xc80_0000,
     },
 ];
 
