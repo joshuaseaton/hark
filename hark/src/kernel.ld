@@ -27,7 +27,7 @@ SECTIONS {
    * linking against the alloc crate, and go back to asserting emptiness once
    * resolved.
    */
-  /DISACARD/ : { *(.eh_frame*) }
+  /DISCARD/ : { *(.eh_frame*) }
 
   .rodata : { *(.srodata*) *(.rodata*) }
 
@@ -41,15 +41,13 @@ SECTIONS {
 
   .data : { *(.data*) *(.sdata*) }
 
-  /* TODO: What alignment guarantees do I have with the start of a section? */
-  /* TODO: Phys code in Fuchsia aligns to 16 bytes - why? */
-  .bss : {
+   /*
+    * The .bss zeroing logic in start.S relies on __bss_start and __bss_end
+    * being 8-byte aligned.
+    */
+  .bss : ALIGN(8) {
     PROVIDE_HIDDEN(__bss_start = .);
     *(.bss*)
-    /*
-     * The .bss zeroing logic in start.S relies on __bss_start and __bss_end
-     * being 8-byte aligned.
-     */
     . = ALIGN(8);
     PROVIDE_HIDDEN(__bss_end = .);
   }

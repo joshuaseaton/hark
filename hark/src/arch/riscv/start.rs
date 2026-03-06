@@ -7,6 +7,8 @@
 use core::arch::{global_asm, naked_asm};
 use libarch::riscv::csr::Mstatus;
 
+use crate::arch::riscv::store;
+
 const STACK_SIZE: u64 = 0x2000; // 8KiB
 
 // TODO: Define this via a more generic asm object macro?
@@ -53,8 +55,10 @@ extern "C" fn _start() {
         la t0, __bss_start
         la t1, __bss_end
         0:
-        sw zero, 0(t0)
-        add t0, t0, {word_size}
+        "#,
+        store!("zero, 0(t0)"),
+        r#"
+        add t0, t0, {reg_size}
         blt t0, t1, 0b
 
         // Our stack is now ready.
@@ -64,7 +68,7 @@ extern "C" fn _start() {
         // callframe around.
         call hark_main
         "#,
-        word_size = const size_of::<usize>(),
+        reg_size = const size_of::<usize>(),
         mstatus_mie = const Mstatus::MIE_BIT,
     )
 }
