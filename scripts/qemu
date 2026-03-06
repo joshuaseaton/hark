@@ -15,31 +15,19 @@ def main [
     cd $env.FILE_PWD
     cd ..
 
-    # `cargo build` can give structured output for finding where the kernel is.
-    #
-    # Build failures are hard to parse in structured output though, so we build
-    # first in a way that will surface any errors as usual. And then we can
-    # (silently) rebuild and be sure that the information we want is present in
-    # the JSON.
-    let release_flag = if $release { [--release] } else { [] }
-    do --capture-errors { ^cargo build ...$release_flag }
-    let app_elf = ^cargo build ...$release_flag --message-format=json-diagnostic-short
-        | complete
-        | get stdout
-        | lines
-        | each { from json }
-        | where executable? != null
-        | get 0.executable
-        | path relative-to $env.PWD
-
-    let app = $"($app_elf).bin"
-    ^llvm-objcopy -O binary $app_elf $app
-
     let cargo_board_toml = [ .cargo board.toml ] | path join
     if not ($cargo_board_toml | path exists) {
         error make --unspanned "Run `scripts/set-board` first"
     }
     let board = open $cargo_board_toml | get env.HARK_BOARD
+
+    let release_flag = if $release { [--release] } else { [] }
+    let profile = if $release { "release" } else { "debug" }
+    ^cargo build ...$release_flag
+
+    let app_elf = [target $board $profile example] | path join
+    let app = $"($app_elf).bin"
+    ^llvm-objcopy -O binary $app_elf $app
     let board_toml = [ hark board $"($board).toml" ] | path join
 
     let qemu_settings = open $board_toml | get qemu
