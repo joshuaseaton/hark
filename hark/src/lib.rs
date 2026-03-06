@@ -60,8 +60,12 @@ macro_rules! println {
     }};
 }
 
+// A Hark app must define this.
+unsafe extern "Rust" {
+    fn hark_app_main();
+}
+
 // Jumped to from _start after initialization.
-#[allow(clippy::vec_init_then_push)]
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
     platform::console::init();
@@ -77,6 +81,11 @@ extern "C" fn hark_main() {
     arch::init();
 
     platform::init_post_console();
+
+    // TODO: Run this in a thread. It currently just exits immediately.
+    unsafe {
+        hark_app_main();
+    }
 
     // Nothing else to do, so drop into the shell.
     kernel::shell::enter();

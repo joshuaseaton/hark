@@ -7,4 +7,10 @@
 #![no_std]
 #![no_main]
 
-extern crate hark;
+use hark::println;
+
+// TODO: do much more.
+#[unsafe(no_mangle)]
+extern "Rust" fn hark_app_main() {
+    println!("Example: Hello from a Hark app!");
+}
