@@ -31,7 +31,11 @@ def main [
     let board_toml = [ hark board $"($board).toml" ] | path join
 
     let qemu_settings = open $board_toml | get qemu
-    let qemu = $"qemu-system-($qemu_settings.arch)"
+    mut command = [ $"qemu-system-($qemu_settings.arch)" -nographic]
+    $command = $command | append (match $qemu_settings.arch {
+        "riscv32" | "riscv64" =>  [ -bios $app ]
+        _ => [ -kernel $app ]
+    })
 
     let board_flags = $qemu_settings
         | reject arch  # Used for picking out the QEMU binary itself.
@@ -47,7 +51,7 @@ def main [
         }
         | flatten
 
-    let command = [$qemu -bios none -nographic -kernel $app] | append $board_flags
+    $command = $command | append $board_flags
 
     if $dry {
         return $command
