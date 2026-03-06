@@ -7,7 +7,10 @@
 # https://opensource.org/licenses/MIT
 
 # Disassembles the example hark app.
-def main [] {
+def main [
+    --release  # Disassemble the release build
+] {
     $env.RUST_TARGET_PATH = [ $env.FILE_PWD .. hark board ] | path join
-    ^cargo objdump -- --disassemble --demangle --line-numbers
+    let release_flag = if $release { [--release] } else { [] }
+    ^cargo objdump ...$release_flag -- --disassemble --demangle --line-numbers
 }
