@@ -21,7 +21,7 @@ repository = "https://github.com/joshuaseaton/hark"
 all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
 cast_possible_truncation = "allow"
-deref_addrof = "allow" # `*&raw` is needd for static mut access.
+deref_addrof = "allow" # `*&raw` is needed for static mut access.
 empty_loop = "allow"
 inline_always = "allow"
 must_use_candidate = "allow"
@@ -29,3 +29,6 @@ new_without_default = "allow"
 too_many_arguments = "allow"
 too_many_lines = "allow"
 wildcard_imports = "allow"
+
+[profile.dev]
+opt-level = 1
