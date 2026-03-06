@@ -12,7 +12,6 @@ SECTIONS {
   . = LOAD_ADDRESS;
   PROVIDE_HIDDEN(__executable_start = .);
 
-
   .text : {
     /* Keep _start first for use as a raw binary image */
     *(.text._start)
@@ -21,11 +20,8 @@ SECTIONS {
   }
 
   /*
-   * Only offline unwind info (in .debug_frame) should be present.
-   *
-   * TODO: link to the Rust issue preventing this section from being empty when
-   * linking against the alloc crate, and go back to asserting emptiness once
-   * resolved.
+   * TODO(https://github.com/rust-lang/rust/issues/153115): Only offline unwind
+   * info (in .debug_frame) should be present.
    */
   /DISCARD/ : { *(.eh_frame*) }
 
@@ -37,7 +33,6 @@ SECTIONS {
     *(.note.gnu.build-id)
     __note_gnu_build_id_end = .;
   }
-
 
   .data : { *(.data*) *(.sdata*) }
 
