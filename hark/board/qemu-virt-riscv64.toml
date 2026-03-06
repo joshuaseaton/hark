@@ -10,4 +10,6 @@ load_address = 0x8000_0000
 [qemu]
 arch = "riscv64"
 machine = "virt"
-memory = "200M" # TODO: bring this down!
+# 2MiB + 1Kib. Obnoxiously the virt machine aligns the devicetree to 2MiB, so we
+# cannot really constrain memory in this case past this point.
+memory = "2049K"
