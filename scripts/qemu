@@ -40,17 +40,13 @@ def main [
         error make --unspanned "Run `scripts/set-board` first"
     }
     let board = open $cargo_board_toml | get env.HARK_BOARD
-    let qemu = match $board {
-        "qemu-virt-riscv32" => "qemu-system-riscv32"
-        "qemu-virt-riscv64" => "qemu-system-riscv64"
-        _ => { error make --unspanned $"($board) is not a QEMU board" }
-    }
-
-    mut command = [$qemu -bios none -nographic -kernel $app]
-
     let board_toml = [ hark board $"($board).toml" ] | path join
-    let board_flags = open $board_toml
-        | get qemu
+
+    let qemu_settings = open $board_toml | get qemu
+    let qemu = $"qemu-system-($qemu_settings.arch)"
+
+    let board_flags = $qemu_settings
+        | reject arch  # Used for picking out the QEMU binary itself.
         | transpose key value
         | each { |setting|
             let flag = match $setting.key {
@@ -61,8 +57,8 @@ def main [
             [$flag $setting.value]
         }
         | flatten
-    
-    $command = $command | append $board_flags
+
+    let command = [$qemu -bios none -nographic -kernel $app] | append $board_flags
 
     if $dry {
         return $command

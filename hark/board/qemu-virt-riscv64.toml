@@ -1,1 +1,13 @@
-qemu-virt-riscv32.toml
+# Copyright (c) 2026 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+platform = "qemu-virt-riscv"
+load_address = 0x8000_0000
+
+[qemu]
+arch = "riscv64"
+machine = "virt"
+memory = "200M" # TODO: bring this down!
