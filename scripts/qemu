@@ -72,7 +72,7 @@ def main [
     let bid_suffix = ($build_id | str substring 2..)
     let bid_dir = [ target .build-id $bid_prefix ] | path join
     mkdir $bid_dir
-    ^ln -sf ($app | path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
+    ^ln -sf ($app_elf | path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
 
     run-external $command.0 ...($command | skip 1)
         | (
