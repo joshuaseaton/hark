@@ -102,6 +102,7 @@ impl CsrAttrs {
             }
 
             impl ::regio::AtomicIoBackend for #io {
+                #[inline]
                 fn atomic_swap_at(&self, value: Self::Base, _: ()) -> Self::Base {
                     let initial: Self::Base;
                     unsafe {
@@ -115,6 +116,7 @@ impl CsrAttrs {
                     initial
                 }
 
+                #[inline]
                 fn atomic_set_bits_at(&self, value: Self::Base, _: ()) -> Self::Base {
                     let initial: Self::Base;
                     unsafe {
@@ -128,6 +130,7 @@ impl CsrAttrs {
                     initial
                 }
 
+                #[inline]
                 fn atomic_clear_bits_at(&self, value: Self::Base, _: ()) -> Self::Base {
                     let initial: Self::Base;
                     unsafe {
