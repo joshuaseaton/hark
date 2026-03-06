@@ -7,8 +7,13 @@
 #![no_std]
 
 pub mod arch;
-pub mod kernel;
+pub mod debug;
 pub mod platform;
+
+pub(crate) mod shell;
+
+mod panic;
+pub(crate) use panic::*;
 
 // There is naturally going to be a lot of dead device code in any given
 // configuration, so the lint here would be too noisy. We can at least permit
@@ -22,7 +27,7 @@ extern crate alloc;
 
 use core::fmt;
 
-use kernel::debug::build_id;
+use debug::build_id;
 
 const HARK_WELCOME: &str = r"
 ▄▄  ▄▄ 
@@ -73,7 +78,7 @@ extern "C" fn hark_main() {
     print_version();
 
     // Parses the build ID. Do it early for symbolizable backtraces.
-    kernel::debug::early_init();
+    debug::early_init();
     print_build_id();
 
     print_console_info();
@@ -88,7 +93,7 @@ extern "C" fn hark_main() {
     }
 
     // Nothing else to do, so drop into the shell.
-    kernel::shell::enter();
+    shell::enter();
 }
 
 //

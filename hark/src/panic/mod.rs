@@ -6,7 +6,7 @@
 
 use core::panic::PanicInfo;
 
-use crate::kernel::debug::print_backtrace;
+use crate::debug::print_backtrace;
 use crate::platform;
 use crate::println;
 

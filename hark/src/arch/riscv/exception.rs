@@ -14,7 +14,7 @@ use regio::Register as _;
 
 use crate::arch::riscv::timer;
 use crate::arch::riscv::{Regs, enable_interrupts, load, store};
-use crate::kernel::panic_common;
+use crate::panic_common;
 use crate::platform;
 use crate::{print, println};
 
