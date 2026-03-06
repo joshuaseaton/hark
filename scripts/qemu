@@ -8,7 +8,10 @@
 
 # If a QEMU board is set, this will build the example Hark app and run it
 # under the appropriate QEMU configuration.
-def main [] {
+def main [
+    --dry      # Return the QEMU command (as a list of strings) without running it
+    --release  # Build in release mode
+] {
     cd $env.FILE_PWD
     cd ..
 
@@ -18,8 +21,9 @@ def main [] {
     # first in a way that will surface any errors as usual. And then we can
     # (silently) rebuild and be sure that the information we want is present in
     # the JSON.
-    do --capture-errors { ^cargo build }
-    let app_elf = ^cargo build --message-format=json-diagnostic-short
+    let release_flag = if $release { [--release] } else { [] }
+    do --capture-errors { ^cargo build ...$release_flag }
+    let app_elf = ^cargo build ...$release_flag --message-format=json-diagnostic-short
         | complete
         | get stdout
         | lines
@@ -59,6 +63,10 @@ def main [] {
         | flatten
     
     $command = $command | append $board_flags
+
+    if $dry {
+        return $command
+    }
 
     # Set up .build-id directory for llvm-symbolizer --filter-markup.
     # TODO: Update llvm-symbolizer so that `llvm-symbolizer --obj $system` can
