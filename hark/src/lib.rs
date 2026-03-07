@@ -23,8 +23,6 @@ pub(crate) use panic::*;
 #[cfg_attr(not(clippy), allow(dead_code))]
 pub(crate) mod dev;
 
-extern crate alloc;
-
 use core::fmt;
 
 use debug::build_id;

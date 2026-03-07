@@ -4,12 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use alloc::vec::Vec;
+use heapless::Vec;
 
 use crate::platform::console;
 use crate::print;
 
-const BUFFER_SIZE: usize = 256;
+const BUFFER_SIZE: usize = 128;
 const PROMPT: &[u8; 2] = b"$ ";
 
 // Supported control sequences
@@ -85,7 +85,7 @@ pub(crate) fn enter() -> ! {
     console::write(b"Entering shell...\n\r");
     console::write(PROMPT);
 
-    let mut displayed = Vec::new();
+    let mut displayed: Vec<u8, BUFFER_SIZE> = Vec::new();
     let mut cursor = 0;
 
     let mut buffer = [0u8; BUFFER_SIZE];
@@ -136,9 +136,9 @@ pub(crate) fn enter() -> ! {
 
                 0x20..=0x7e => {
                     if cursor == displayed.len() {
-                        displayed.push(ch);
+                        displayed.push(ch).unwrap();
                     } else {
-                        displayed.insert(cursor, ch);
+                        displayed.insert(cursor, ch).unwrap();
                     }
                     let new_cursor = cursor + 1;
                     console::write(&displayed[cursor..]);
@@ -163,7 +163,7 @@ pub(crate) fn enter() -> ! {
 }
 
 fn handle_control_sequence(
-    displayed: &mut Vec<u8>,
+    displayed: &mut Vec<u8, BUFFER_SIZE>,
     cursor: &mut usize,
     seq: ControlSequence,
 ) -> bool {
