@@ -6,6 +6,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT
 
+use build.nu
+
 # If a QEMU board is set, this will build the example Hark app and run it
 # under the appropriate QEMU configuration.
 def main [
@@ -15,26 +17,14 @@ def main [
     cd $env.FILE_PWD
     cd ..
 
-    let cargo_board_toml = [ .cargo board.toml ] | path join
-    if not ($cargo_board_toml | path exists) {
-        error make --unspanned "Run `scripts/set-board` first"
-    }
-    let board = open $cargo_board_toml | get env.HARK_BOARD
+    let result = if $release { build --release } else { build }
+    let flattened = $result.flattened
+    let qemu_settings = open $result.config | get qemu
 
-    let release_flag = if $release { [--release] } else { [] }
-    let profile = if $release { "release" } else { "debug" }
-    ^cargo build ...$release_flag
-
-    let app_elf = [target $board $profile example] | path join
-    let app = $"($app_elf).bin"
-    ^llvm-objcopy -O binary $app_elf $app
-    let board_toml = [ hark board $"($board).toml" ] | path join
-
-    let qemu_settings = open $board_toml | get qemu
     mut command = [ $"qemu-system-($qemu_settings.arch)" -nographic]
     $command = $command | append (match $qemu_settings.arch {
-        "riscv32" | "riscv64" =>  [ -bios $app ]
-        _ => [ -kernel $app ]
+        "riscv32" | "riscv64" =>  [ -bios $flattened ]
+        _ => [ -kernel $flattened ]
     })
 
     let board_flags = $qemu_settings
@@ -60,7 +50,7 @@ def main [
     # Set up .build-id directory for llvm-symbolizer --filter-markup.
     # TODO: Update llvm-symbolizer so that `llvm-symbolizer --obj $system` can
     # work without a .build-id directory. 
-    let build_id = (^llvm-readelf -n $app_elf
+    let build_id = (^llvm-readelf -n $result.elf
         | lines
         | find "Build ID"
         | get 0
@@ -72,7 +62,7 @@ def main [
     let bid_suffix = ($build_id | str substring 2..)
     let bid_dir = [ target .build-id $bid_prefix ] | path join
     mkdir $bid_dir
-    ^ln -sf ($app_elf | path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
+    ^ln -sf ($result.elf| path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
 
     run-external $command.0 ...($command | skip 1)
         | (
