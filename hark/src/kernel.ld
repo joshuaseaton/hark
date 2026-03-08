@@ -33,6 +33,8 @@ SECTIONS {
     *(.note.gnu.build-id)
     __note_gnu_build_id_end = .;
   }
+  /* Skip past the known .build ID note header */
+  __build_id_start = __note_gnu_build_id_start + 16;
 
   .data : { *(.data*) *(.sdata*) }
 

@@ -8,7 +8,6 @@ use core::{fmt, ptr};
 
 use derive_more::{Deref, From};
 use libarch::Backtrace;
-use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 use crate::println;
 
@@ -16,8 +15,8 @@ unsafe extern "C" {
     static __executable_start: u8;
     static _end: u8;
 
-    // Boundaries of the .note.gnu.build-id section.
-    static __note_gnu_build_id_start: u8;
+    // Boundaries of the build ID within the .note.gnu.build-id section.
+    static __build_id_start: u8;
     static __note_gnu_build_id_end: u8;
 }
 
@@ -39,57 +38,19 @@ impl fmt::Display for BuildId {
     }
 }
 
-// Elf32_Nhdr or Elf64_Nhdr.
-#[derive(FromBytes, Immutable, KnownLayout)]
-#[repr(C)]
-struct ElfNhdr {
-    namesz: u32,
-    descsz: u32,
-    type_: u32,
-}
-
 pub(crate) fn early_init() {
     init_build_id();
 }
 
 fn init_build_id() {
-    const NT_GNU_BUILD_ID: u32 = 3;
-    const GNU_NOTE_NAME: &[u8; 4] = b"GNU\0";
-
-    let build_id_start = &raw const __note_gnu_build_id_start;
+    let build_id_start = &raw const __build_id_start;
     let build_id_end = &raw const __note_gnu_build_id_end;
-    let build_id_slice = unsafe {
+    let build_id = unsafe {
         core::slice::from_raw_parts(
             build_id_start,
             build_id_end.offset_from_unsigned(build_id_start),
         )
     };
-
-    let (
-        ElfNhdr {
-            namesz,
-            descsz,
-            type_,
-        },
-        rest,
-    ) = ElfNhdr::read_from_prefix(build_id_slice)
-        .expect(".note.gnu.build-id too small for note header");
-    assert_eq!(
-        type_, NT_GNU_BUILD_ID,
-        ".note.gnu.build-id has type {type_} != NT_GNU_BUILD_ID",
-    );
-
-    let (name, rest) = rest
-        .split_at_checked(namesz as usize)
-        .expect(".note.gnu.build-id malformed: namesz exceeds the end of the note");
-    assert_eq!(
-        name, GNU_NOTE_NAME,
-        ".note.gnu.build-id has name {name:#?} != {GNU_NOTE_NAME:#?}"
-    );
-    let (build_id, _) = rest
-        .split_at_checked(descsz as usize)
-        .expect(".note.gnu.build-id malformed: descsz exceeds the end of the note");
-
     // Unsafe: Setting it once while we are single-threaded.
     unsafe {
         ptr::write_volatile(&raw mut BUILD_ID, BuildId(build_id));
