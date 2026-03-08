@@ -7,7 +7,7 @@
 use core::arch::{global_asm, naked_asm};
 use libarch::riscv::csr::Mstatus;
 
-use crate::arch::riscv::store;
+use crate::arch::riscv::{load, store};
 
 const STACK_SIZE: u64 = 0x2000; // 8KiB
 
@@ -31,42 +31,60 @@ extern "C" fn _start() {
         r#"
         // Clear the return address and frame pointer: we are now at the
         // root of our call stack.
-        mv ra, zero
-        mv s0, zero
+          mv ra, zero
+          mv s0, zero
 
         // Clear any incoming stack pointer so it can't be used accidentally
         // before we set it up properly below.
-        mv sp, zero
+          mv sp, zero
 
         // Clear the gp register in case anything tries to use it.
-        mv gp, zero
+          mv gp, zero
         "#,
         r#"
         // Mask all interrupts in case a prior bootloader left them.
-        csrc mstatus, {mstatus_mie}
-        csrw mie, zero
+          csrc mstatus, {mstatus_mie}
+          csrw mie, zero
 
         // Reset the trap vector base address register, just in case a prior
         // bootloader left it set.
-        csrw mtvec, zero
+          csrw mtvec, zero
 
-        // Clear .bss. The linker script ensures that the start and end are
-        // both 8-byte aligned.
-        la t0, __bss_start
-        la t1, __bss_end
+        // Copy .data from flash to RAM.
+        // The linker script ensures that the bounds are 8-byte-aligned.
+          la t0, __data_lma_start
+          la t1, __data_start
+          la t2, __data_end
+          bge t1, t2, 1f
+        0:
+        "#,
+        load!("t3, 0(t0)"),
+        store!("t3, 0(t1)"),
+        r#"
+          addi t0, t0, {reg_size}
+          addi t1, t1, {reg_size}
+          blt t1, t2, 0b
+        1:
+
+        // Clear .bss.
+        // The linker script ensures that the bounds are 8-byte-aligned.
+          la t0, __bss_start
+          la t1, __bss_end
+          bge t0, t1, 1f
         0:
         "#,
         store!("zero, 0(t0)"),
         r#"
-        add t0, t0, {reg_size}
-        blt t0, t1, 0b
+          add t0, t0, {reg_size}
+          blt t0, t1, 0b
+        1:
 
         // Our stack is now ready.
-        la sp, .Lstack_end
+          la sp, .Lstack_end
 
         // Tail into hark_main, as there's real benefit to keeping this
         // callframe around.
-        call hark_main
+          call hark_main
         "#,
         reg_size = const size_of::<usize>(),
         mstatus_mie = const Mstatus::MIE_BIT,

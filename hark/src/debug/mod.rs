@@ -12,8 +12,10 @@ use libarch::Backtrace;
 use crate::println;
 
 unsafe extern "C" {
-    static __executable_start: u8;
-    static _end: u8;
+    static __boot_flash_start: u8;
+    static __data_lma_start: u8;
+    static __boot_ram_start: u8;
+    static __boot_ram_end: u8;
 
     // Boundaries of the build ID within the .note.gnu.build-id section.
     static __build_id_start: u8;
@@ -110,12 +112,17 @@ fn print_module_element() {
 
 #[inline(never)]
 fn print_mmap_element() {
-    let executable_start = &raw const __executable_start;
-    let executable_end = &raw const _end;
-    let executable_len = unsafe { executable_end.offset_from_unsigned(executable_start) };
+    let flash_start = &raw const __boot_flash_start;
+    let flash_nonwritable_end = &raw const __data_lma_start;
+    let flash_nonwritable_len = unsafe { flash_nonwritable_end.offset_from_unsigned(flash_start) };
     println!(
-        "{{{{{{mmap:{executable_start:#?}:{executable_len:#x}:load:0:rwx:{executable_start:#?}}}}}}}"
+        "{{{{{{mmap:{flash_start:#?}:{flash_nonwritable_len:#x}:load:0:rx:{flash_start:#?}}}}}}}"
     );
+
+    let ram_start = &raw const __boot_ram_start;
+    let ram_end = &raw const __boot_ram_end;
+    let ram_len = unsafe { ram_end.offset_from_unsigned(ram_start) };
+    println!("{{{{{{mmap:{ram_start:#?}:{ram_len:#x}:load:0:rw:{ram_start:#?}}}}}}}");
 }
 
 #[inline(never)]

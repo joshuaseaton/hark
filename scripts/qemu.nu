@@ -21,12 +21,6 @@ def main [
     let flattened = $result.flattened
     let qemu_settings = open $result.config | get qemu
 
-    mut command = [ $"qemu-system-($qemu_settings.arch)" -nographic]
-    $command = $command | append (match $qemu_settings.arch {
-        "riscv32" | "riscv64" =>  [ -bios $flattened ]
-        _ => [ -kernel $flattened ]
-    })
-
     let board_flags = $qemu_settings
         | reject arch  # Used for picking out the QEMU binary itself.
         | transpose key value
@@ -35,13 +29,28 @@ def main [
                 "cpu" => "-cpu",
                 "machine" => "-machine"
                 "memory" => "-m"
+                "flash_size" => {
+                    ^truncate -s $setting.value $flattened
+                }
                 _ => { error make --unspanned $"unknown QEMU setting \"($setting.key)\"" }
             }
-            [$flag $setting.value]
+            if ($flag | is-not-empty) {
+                [$flag $setting.value]
+            }
         }
         | flatten
 
-    $command = $command | append $board_flags
+    let arch = ^llvm-readelf --elf-output-style=JSON $result.elf
+        | from json
+        | get FileSummary.0.Arch
+
+    let command = [
+        $"qemu-system-($arch)"
+         -bios none
+        # Boot in place out of flash.
+        -drive $"if=pflash,file=($flattened),format=raw,unit=0"
+        -nographic
+    ] | append $board_flags
 
     if $dry {
         return $command

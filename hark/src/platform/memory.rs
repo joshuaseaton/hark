@@ -7,8 +7,10 @@
 use crate::println;
 
 unsafe extern "C" {
-    static __executable_start: u8;
-    static _end: u8;
+    static __boot_flash_start: u8;
+    static __boot_flash_end: u8;
+    static __boot_ram_start: u8;
+    static __boot_ram_end: u8;
 }
 
 #[allow(unused)]
@@ -26,8 +28,11 @@ impl Range {
 }
 
 pub fn init(_memory: &[Range]) {
-    let image_start = (&raw const __executable_start).addr();
-    let image_end = (&raw const _end).addr();
+    let flash_start = (&raw const __boot_flash_start).addr();
+    let flash_end = (&raw const __boot_flash_end).addr();
+    println!("Boot flash: [{flash_start:#x}, {flash_end:#x})");
 
-    println!("Init: Hark loaded at [{image_start:#x}, {image_end:#x})");
+    let ram_start = (&raw const __boot_ram_start).addr();
+    let ram_end = (&raw const __boot_ram_end).addr();
+    println!("Boot RAM: [{ram_start:#x}, {ram_end:#x})");
 }

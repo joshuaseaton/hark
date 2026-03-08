@@ -89,7 +89,6 @@ extern "C" fn hark_main() {
     unsafe {
         hark_app_main();
     }
-
     // Nothing else to do, so drop into the shell.
     shell::enter();
 }

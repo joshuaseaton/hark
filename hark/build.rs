@@ -15,7 +15,10 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 struct Spec {
     platform: String,
-    load_address: i64,
+    boot_flash_address: u64,
+    boot_flash_size: u64,
+    boot_ram_address: u64,
+    boot_ram_size: u64,
 }
 
 fn declare_input(path: impl Display) {
@@ -75,7 +78,10 @@ fn main() {
 
     let link_args = [
         format!("-T{}", linker_script.display()),
-        format!("--defsym=LOAD_ADDRESS={:#x}", spec.load_address),
+        format!("--defsym=BOOT_FLASH_ADDRESS={:#x}", spec.boot_flash_address),
+        format!("--defsym=BOOT_FLASH_SIZE={:#x}", spec.boot_flash_size),
+        format!("--defsym=BOOT_RAM_ADDRESS={:#x}", spec.boot_ram_address),
+        format!("--defsym=BOOT_RAM_SIZE={:#x}", spec.boot_ram_size),
         "--build-id".to_string(),
     ];
     hark_build::emit_metadata_for_app(link_args.as_slice());

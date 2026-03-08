@@ -5,12 +5,17 @@
 # https://opensource.org/licenses/MIT
 
 platform = "qemu-virt-riscv"
-load_address = 0x8000_0000
+boot_flash_address = 0x2000_0000
+boot_flash_size = 0x200_0000
+
+# See qemu-virt-riscv32.toml for rationale.
+boot_ram_address = 0x8010_0000
+boot_ram_size = 0x1_0000 # Keep in sync with qemu-virt-riscv32.toml
 
 [qemu]
-arch = "riscv64"
 cpu = "rv64,h=false,s=false"
 machine = "virt"
-# 2MiB + 1Kib. Obnoxiously the virt machine aligns the devicetree to 2MiB, so we
-# cannot really constrain memory in this case past this point.
-memory = "2049K"
+# boot RAM (64Kib) at a 1MiB offset. See qemu-virt-riscv32.toml and keep this in
+# sync.
+memory = "1088K"
+flash_size = "32M"

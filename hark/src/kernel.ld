@@ -6,18 +6,25 @@
  *  https://opensource.org/licenses/MIT
  */
 
+MEMORY {
+  /* The flash range out of which the kernel is booted. */
+  BOOT_FLASH (rx) : ORIGIN = BOOT_FLASH_ADDRESS, LENGTH = BOOT_FLASH_SIZE
+
+  /* The natural range of RAM claimed by the kernel. */
+  BOOT_RAM   (rw) : ORIGIN = BOOT_RAM_ADDRESS, LENGTH = BOOT_RAM_SIZE
+}
+
 ENTRY(_start)
 
 SECTIONS {
-  . = LOAD_ADDRESS;
-  PROVIDE_HIDDEN(__executable_start = .);
+  PROVIDE_HIDDEN(__boot_flash_start = ORIGIN(BOOT_FLASH));
 
   .text : {
     /* Keep _start first for use as a raw binary image */
     *(.text._start)
     *(.text*)
     *(.stext*)
-  }
+  } > BOOT_FLASH
 
   /*
    * TODO(https://github.com/rust-lang/rust/issues/153115): Only offline unwind
@@ -25,29 +32,43 @@ SECTIONS {
    */
   /DISCARD/ : { *(.eh_frame*) }
 
-  .rodata : { *(.srodata*) *(.rodata*) }
+  .rodata : { *(.srodata*) *(.rodata*) } > BOOT_FLASH
 
   /* Force 4-byte alignment for the section to match the GNU Note format */
   .note.gnu.build-id : ALIGN(4) {
     __note_gnu_build_id_start = .;
     *(.note.gnu.build-id)
     __note_gnu_build_id_end = .;
-  }
-  /* Skip past the known .build ID note header */
-  __build_id_start = __note_gnu_build_id_start + 16;
+    . = ALIGN(8);
+  } > BOOT_FLASH
+  /* The build ID note is of a known, fixed size */
+  PROVIDE_HIDDEN(__build_id_start = __note_gnu_build_id_start + 16);
 
-  .data : { *(.data*) *(.sdata*) }
+  /*
+   * The .data copying logic in _start relies on __data_start and __data_end
+   * being 8-byte aligned.
+   */
+  .data : ALIGN(8) {
+    PROVIDE_HIDDEN(__data_start = .);
+    *(.data*) *(.sdata*)
+    . = ALIGN(8);
+    PROVIDE_HIDDEN(__data_end = .);
+  } > BOOT_RAM AT> BOOT_FLASH
 
-   /*
-    * The .bss zeroing logic in start.S relies on __bss_start and __bss_end
-    * being 8-byte aligned.
-    */
-  .bss : ALIGN(8) {
+  PROVIDE_HIDDEN(__data_lma_start = LOADADDR(.data));
+  PROVIDE_HIDDEN(__boot_ram_start = ORIGIN(BOOT_RAM));
+  PROVIDE_HIDDEN(__boot_flash_end = LOADADDR(.data) + SIZEOF(.data));
+
+  /*
+   * The .bss zeroing logic in _start relies on __bss_start and __bss_end
+   * being 8-byte aligned.
+   */
+  .bss (NOLOAD) : ALIGN(8) {
     PROVIDE_HIDDEN(__bss_start = .);
     *(.bss*)
     . = ALIGN(8);
     PROVIDE_HIDDEN(__bss_end = .);
-  }
-  
-  PROVIDE_HIDDEN(_end = .);
+  } > BOOT_RAM
+
+  PROVIDE_HIDDEN(__boot_ram_end = .);
 }
