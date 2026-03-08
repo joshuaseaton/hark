@@ -22,7 +22,6 @@ export def main [
     let qemu_settings = open $result.config | get qemu
 
     let board_flags = $qemu_settings
-        | reject arch  # Used for picking out the QEMU binary itself.
         | transpose key value
         | each { |setting|
             let flag = match $setting.key {
