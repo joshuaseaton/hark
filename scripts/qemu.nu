@@ -10,12 +10,12 @@ use build.nu
 
 # If a QEMU board is set, this will build the example Hark app and run it
 # under the appropriate QEMU configuration.
-def main [
+export def main [
     --dry      # Return the QEMU command (as a list of strings) without running it
     --release  # Build in release mode
 ] {
-    cd $env.FILE_PWD
-    cd ..
+    const REPO_ROOT = path self | path dirname | path dirname
+    cd $REPO_ROOT
 
     let result = if $release { build --release } else { build }
     let flattened = $result.flattened

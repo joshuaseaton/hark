@@ -9,7 +9,7 @@
 use build.nu
 
 # Generate a summary of relevant sizes for the example app (e.g., by section)
-def main [
+export def main [
     --release  # Use a release build
 ] {
     let elf = if $release { build --release } else { build } | get elf

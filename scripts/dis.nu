@@ -10,11 +10,12 @@ use build.nu
 
 # Disassembles the example hark app, writing the listing to a file next to
 # the binary.
-def main [
+export def main [
     --release  # Disassemble the release build
 ] {
-    cd $env.FILE_PWD
-    cd ..
+    const REPO_ROOT = path self | path dirname | path dirname
+    cd $REPO_ROOT
+
     let app = if $release { build --release } else { build } | get elf
     let disasm = $"($app).lst"
     ^llvm-objdump --disassemble --demangle --line-numbers --no-show-raw-insn $app

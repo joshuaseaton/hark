@@ -10,8 +10,8 @@
 export def main [
     --release  # Build in release mode
 ] {
-    cd $env.FILE_PWD
-    cd ..
+    const REPO_ROOT = path self | path dirname | path dirname
+    cd $REPO_ROOT
 
     let cargo_board_toml = [ .cargo board.toml ] | path join
     if not ($cargo_board_toml | path exists) {

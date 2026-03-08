@@ -7,11 +7,11 @@
 # https://opensource.org/licenses/MIT
 
 # Sets config.toml for a given board.
-def main [
+export def main [
     board?: string  # The board name to set (omit to list the available boards)
 ] {
-    cd $env.FILE_PWD
-    cd ..
+    const REPO_ROOT = path self | path dirname | path dirname
+    cd $REPO_ROOT
 
     let board_dir = [hark board] | path join
     if ($board == null) {
