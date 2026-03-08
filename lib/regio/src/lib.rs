@@ -587,9 +587,11 @@ mod internal {
     macro_rules! fits_in {
         ($narrow:ty, $wide:ty) => {
             impl FitsIn<$wide> for $narrow {
+                #[inline(always)]
                 fn widen(self) -> $wide {
                     self as $wide
                 }
+                #[inline(always)]
                 fn truncate(wide: $wide) -> Self {
                     wide as Self
                 }
@@ -678,6 +680,7 @@ where
     type Addr = Offset;
     type Base = Reg;
 
+    #[inline(always)]
     fn read_at(&self, offset: Offset) -> Reg {
         let scale = size_of::<Access>() / size_of::<Reg>();
         debug_assert!(*offset < self.size);
@@ -688,6 +691,7 @@ where
         }
     }
 
+    #[inline(always)]
     fn write_at(&self, value: Reg, offset: Offset) {
         let scale = size_of::<Access>() / size_of::<Reg>();
         debug_assert!(*offset < self.size);

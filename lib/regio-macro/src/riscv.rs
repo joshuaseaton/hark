@@ -76,7 +76,7 @@ impl CsrAttrs {
                 type Base = <#type_name as ::core::ops::Deref>::Target;
                 type Addr = ();
 
-                #[inline]
+                #[inline(always)]
                 fn read_at(&self, _: ()) -> Self::Base {
                     let value: Self::Base;
                     unsafe {
@@ -89,7 +89,7 @@ impl CsrAttrs {
                     value.into()
                 }
 
-                #[inline]
+                #[inline(always)]
                 fn write_at(&self, value: Self::Base, _: ()) {
                     unsafe {
                         ::core::arch::asm!(
@@ -102,7 +102,7 @@ impl CsrAttrs {
             }
 
             impl ::regio::AtomicIoBackend for #io {
-                #[inline]
+                #[inline(always)]
                 fn atomic_swap_at(&self, value: Self::Base, _: ()) -> Self::Base {
                     let initial: Self::Base;
                     unsafe {
@@ -116,7 +116,7 @@ impl CsrAttrs {
                     initial
                 }
 
-                #[inline]
+                #[inline(always)]
                 fn atomic_set_bits_at(&self, value: Self::Base, _: ()) -> Self::Base {
                     let initial: Self::Base;
                     unsafe {
@@ -130,7 +130,7 @@ impl CsrAttrs {
                     initial
                 }
 
-                #[inline]
+                #[inline(always)]
                 fn atomic_clear_bits_at(&self, value: Self::Base, _: ()) -> Self::Base {
                     let initial: Self::Base;
                     unsafe {
