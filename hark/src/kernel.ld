@@ -39,7 +39,6 @@ SECTIONS {
     __note_gnu_build_id_start = .;
     *(.note.gnu.build-id)
     __note_gnu_build_id_end = .;
-    . = ALIGN(8);
   } > BOOT_FLASH
   /* The build ID note is of a known, fixed size */
   PROVIDE_HIDDEN(__build_id_start = __note_gnu_build_id_start + 16);
