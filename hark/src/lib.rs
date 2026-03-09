@@ -8,6 +8,7 @@
 
 pub mod arch;
 pub mod debug;
+pub mod heap;
 pub mod platform;
 
 pub(crate) mod shell;
@@ -26,6 +27,13 @@ pub(crate) mod dev;
 use core::fmt;
 
 use debug::build_id;
+
+unsafe extern "C" {
+    static __boot_flash_start: u8;
+    static __boot_flash_end: u8;
+    static __boot_ram_start: u8;
+    static __boot_ram_end: u8;
+}
 
 const HARK_WELCOME: &str = r"
 ▄▄  ▄▄ 
@@ -79,11 +87,14 @@ extern "C" fn hark_main() {
     debug::early_init();
     print_build_id();
 
+    print_boot_memory();
     print_console_info();
 
     arch::init();
 
     platform::init_post_console();
+
+    heap::init();
 
     // TODO: Run this in a thread. It currently just exits immediately.
     unsafe {
@@ -122,4 +133,15 @@ fn print_console_info() {
     print!("Console: ");
     platform::console::describe(&mut Stdout {});
     print!("\n");
+}
+
+#[inline(never)]
+fn print_boot_memory() {
+    let flash_start = (&raw const __boot_flash_start).addr();
+    let flash_end = (&raw const __boot_flash_end).addr();
+    println!("Boot flash: [{flash_start:#x}, {flash_end:#x})");
+
+    let ram_start = (&raw const __boot_ram_start).addr();
+    let ram_end = (&raw const __boot_ram_end).addr();
+    println!("Boot RAM: [{ram_start:#x}, {ram_end:#x})");
 }

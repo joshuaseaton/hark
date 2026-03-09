@@ -7,7 +7,7 @@
 use crate::dev::interrupt::Plic;
 use crate::dev::power::SiFiveTest;
 use crate::dev::uart;
-use crate::platform::memory;
+use crate::heap;
 
 #[cfg(not(any(target_arch = "riscv32", target_arch = "riscv64")))]
 compile_error!("qemu-virt-riscv is only defined for RISC-V");
@@ -20,14 +20,12 @@ const UART_ADDR: usize = 0x1000_0000;
 const PLIC_ADDR: usize = 0x0c00_0000;
 pub const MAX_IRQ: u32 = 96;
 
-pub const MEMORY_MAP: [memory::Range; 1] = [
-    // Constrained to 64KiB for discipline's sake.
-    // TODO: bring this down.
-    memory::Range {
-        start: 0x8010_0000,
-        size: 0x0001_0000,
-    },
-];
+// Constrained to 64KiB for discipline's sake.
+// TODO: bring this down.
+pub const RAM: heap::Range = heap::Range {
+    start: 0x8010_0000,
+    size: 0x0001_0000,
+};
 
 pub type Console = uart::Ns8250;
 

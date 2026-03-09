@@ -6,7 +6,6 @@
 
 pub mod console;
 pub(crate) mod interrupt;
-mod memory;
 pub mod power;
 
 #[cfg_attr(platform = "qemu-virt-riscv", path = "qemu_virt_riscv.rs")]
@@ -23,7 +22,9 @@ cfg_if::cfg_if! {
     }
 }
 
+// TODO: Generalize this to a list when needed.
+pub(crate) use backend::RAM;
+
 pub(crate) fn init_post_console() {
     interrupt::init();
-    memory::init(&backend::MEMORY_MAP);
 }
