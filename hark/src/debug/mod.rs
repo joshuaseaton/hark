@@ -106,7 +106,7 @@ fn print_module_element() {
     // mid-panic due to a malformed build ID.
     let build_id = build_id();
     if !build_id.is_empty() {
-        println!("{{{{{{module:0:hark:elf:{}}}}}}}}}", build_id);
+        println!("{{{{{{module:0:hark:elf:{}}}}}}}", build_id);
     }
 }
 
