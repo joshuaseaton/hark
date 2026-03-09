@@ -9,7 +9,7 @@ use libarch::riscv::csr::Mstatus;
 
 use crate::arch::riscv::{load, store};
 
-const STACK_SIZE: u64 = 0x2000; // 8KiB
+const STACK_SIZE: u64 = 0x1000;
 
 // TODO: Define this via a more generic asm object macro?
 global_asm!(
