@@ -32,3 +32,6 @@ wildcard_imports = "allow"
 
 [profile.dev]
 opt-level = 1
+
+[profile.release]
+opt-level = "s"
