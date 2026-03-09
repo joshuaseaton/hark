@@ -4,7 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use core::{fmt, ptr};
+use core::fmt;
+use core::mem::MaybeUninit;
 
 use derive_more::{Deref, From};
 use libarch::Backtrace;
@@ -25,7 +26,7 @@ unsafe extern "C" {
 // The kernel's GNU build ID. Despite being `mut` this will be set once while
 // the kernel is single threaded in init_build_id(), after which it may be
 // freely accessed as immutable via build_id().
-static mut BUILD_ID: BuildId = BuildId(&[]);
+static mut BUILD_ID: MaybeUninit<BuildId> = MaybeUninit::uninit();
 
 /// Represents a GNU build ID.
 #[derive(Clone, Copy, Debug, Deref, Eq, From, PartialEq)]
@@ -55,7 +56,7 @@ fn init_build_id() {
     };
     // Unsafe: Setting it once while we are single-threaded.
     unsafe {
-        ptr::write_volatile(&raw mut BUILD_ID, BuildId(build_id));
+        (*&raw mut BUILD_ID).write(BuildId(build_id));
     }
 }
 
@@ -68,7 +69,7 @@ fn init_build_id() {
 pub fn build_id() -> BuildId {
     // Saftey: This should only be accessed after init_build_id() and is
     // read-only.
-    unsafe { ptr::read_volatile(&raw const BUILD_ID) }
+    unsafe { BUILD_ID.assume_init() }
 }
 
 // Prints the LLVM symbolizer markup for offline symbolization.
