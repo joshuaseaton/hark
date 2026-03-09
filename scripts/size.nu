@@ -23,19 +23,19 @@ export def main [
         $metadata.ProgramHeaders
             # PT_LOAD is 0b1
             | where $it.ProgramHeader.Type.Value == 0b1
-            | reduce --fold { total: 0, writable_total: 0 } {
+            | reduce --fold { file: 0, writable: 0 } {
                 |phdr, acc|
                 let phdr = $phdr.ProgramHeader
                 # PF_W is 0b10
-                let writable_size = if ($phdr.Flags.Value | bits and 0x2) == 0 {
-                    0
-                } else {
+                let writable_size = if (($phdr.Flags.Value | bits and 0x2) != 0) {
                     $phdr.MemSize
+                } else {
+                    0
                 }
 
                 {
-                    total: ($acc.total + $phdr.MemSize),
-                    writable_total: ($acc.writable_total + $writable_size),
+                    file: ($acc.file + $phdr.FileSize),
+                    writable: ($acc.writable + $writable_size),
                 }
             }
     )
@@ -57,8 +57,8 @@ export def main [
     )
 
     {
-        "Flash": ($totals.total | into filesize)
-        "RAM": ($totals.writable_total | into filesize)
+        "Flash": ($totals.file | into filesize)
+        "RAM": ($totals.writable | into filesize)
     } | merge $section_totals
 
 }
