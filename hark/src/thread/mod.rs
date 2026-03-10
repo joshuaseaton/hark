@@ -134,7 +134,7 @@ impl Thread {
     /// # Panics
     ///
     /// Panics if the stack is not 16-byte aligned or is empty.
-    pub fn with_stack(entry: impl FnOnce() + Send + 'static, stack: &'static mut [u8]) -> Self {
+    pub fn with_stack(stack: &'static mut [u8], entry: impl FnOnce() + Send + 'static) -> Self {
         let (fn_addr, arg_addr) = type_erase(entry);
         Self::create(fn_addr, arg_addr, Stack::new(stack))
     }
@@ -145,7 +145,7 @@ impl Thread {
     /// # Panics
     ///
     /// Panics if `stack_size` is 0.
-    pub fn with_stack_size(entry: impl FnOnce() + Send + 'static, stack_size: usize) -> Self {
+    pub fn with_stack_size(stack_size: usize, entry: impl FnOnce() + Send + 'static) -> Self {
         assert!(stack_size > 0, "stack size must be non-zero");
         let stack = heap::allocate_stack(stack_size);
         let (fn_addr, arg_addr) = type_erase(entry);
