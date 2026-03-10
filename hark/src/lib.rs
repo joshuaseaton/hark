@@ -76,22 +76,30 @@ unsafe extern "Rust" {
     fn hark_app_main();
 }
 
+// Initialization routines can be interdependent. To make that dependency more
+// explicit, we introduce "witness" types that represent a dependent
+// initialization: steps that perform the dependent initialization return an
+// instance of the witness; steps that depend on such an initialization take the
+// witness type as a parameter.
+
+// Init routines that assume the ability to print.
+pub(crate) struct ConsoleWitness {}
+
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
 extern "C" fn hark_main() {
-    platform::console::init();
-    print_welcome();
-    print_version();
+    let console = platform::early_init(); // Initializes the console
+    print_welcome(&console);
+    print_version(&console);
 
     // Parses the build ID. Do it early for symbolizable backtraces.
-    debug::early_init();
-    print_build_id();
+    debug::init(&console);
+    print_build_id(&console);
+    print_boot_memory(&console);
+    print_console_info(&console);
 
-    print_boot_memory();
-    print_console_info();
-
-    arch::init();
-    platform::init_post_console();
+    arch::init(&console);
+    platform::init(&console);
     heap::init();
     thread::init();
 
@@ -108,12 +116,12 @@ extern "C" fn hark_main() {
 //
 
 #[inline(never)]
-fn print_welcome() {
+fn print_welcome(_: &ConsoleWitness) {
     println!("{HARK_WELCOME}");
 }
 
 #[inline(never)]
-fn print_version() {
+fn print_version(_: &ConsoleWitness) {
     println!(
         "Version: {} ({})",
         env!("HARK_VERSION"),
@@ -122,19 +130,19 @@ fn print_version() {
 }
 
 #[inline(never)]
-fn print_build_id() {
+fn print_build_id(_: &ConsoleWitness) {
     println!("Build ID: {}", build_id());
 }
 
 #[inline(never)]
-fn print_console_info() {
+fn print_console_info(_: &ConsoleWitness) {
     print!("Console: ");
     platform::console::describe(&mut Stdout {});
     print!("\n");
 }
 
 #[inline(never)]
-fn print_boot_memory() {
+fn print_boot_memory(_: &ConsoleWitness) {
     let flash_start = (&raw const __boot_flash_start).addr();
     let flash_end = (&raw const __boot_flash_end).addr();
     println!("Boot flash: [{flash_start:#x}, {flash_end:#x})");

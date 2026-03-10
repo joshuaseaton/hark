@@ -26,7 +26,7 @@ pub(crate) fn describe(w: &mut impl fmt::Write) {
     get_console().describe(w);
 }
 
-pub(crate) fn init() {
+pub(super) fn init() {
     set_console(backend::console());
 }
 

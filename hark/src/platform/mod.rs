@@ -25,6 +25,13 @@ cfg_if::cfg_if! {
 // TODO: Generalize this to a list when needed.
 pub(crate) use backend::RAM;
 
-pub(crate) fn init_post_console() {
+use crate::ConsoleWitness;
+
+pub(crate) fn early_init() -> ConsoleWitness {
+    console::init();
+    ConsoleWitness {}
+}
+
+pub(crate) fn init(_: &ConsoleWitness) {
     interrupt::init();
 }

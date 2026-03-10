@@ -10,7 +10,7 @@ use core::mem::MaybeUninit;
 use derive_more::{Deref, From};
 use libarch::Backtrace;
 
-use crate::println;
+use crate::{ConsoleWitness, println};
 
 unsafe extern "C" {
     static __boot_flash_start: u8;
@@ -41,7 +41,7 @@ impl fmt::Display for BuildId {
     }
 }
 
-pub(crate) fn early_init() {
+pub(crate) fn init(_: &ConsoleWitness) {
     init_build_id();
 }
 

@@ -14,7 +14,7 @@ use core::{fmt, mem, ptr};
 use libarch::riscv::csr::{Marchid, Mhartid, Mimpid, Misa, Mscratch, Mstatus, Mvendorid};
 use regio::Register as _;
 
-use crate::{print, println};
+use crate::{ConsoleWitness, print, println};
 
 #[used]
 static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
@@ -124,7 +124,7 @@ pub fn get_percpu() -> &'static PerCpu {
 }
 
 #[inline]
-pub fn init() {
+pub fn init(_: &ConsoleWitness) {
     let percpu = get_percpu();
     Mscratch::from(ptr::from_ref(percpu).addr()).write();
     exception::init();
