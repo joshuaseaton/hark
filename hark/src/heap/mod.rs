@@ -10,6 +10,7 @@ use core::ptr::{self, NonNull};
 use core::slice;
 
 use crate::platform;
+use crate::thread::Stack;
 
 unsafe extern "C" {
     static __boot_ram_end: u8;
@@ -30,41 +31,6 @@ pub(crate) struct Range {
 impl Range {
     pub const fn end(self) -> usize {
         self.start + self.size
-    }
-}
-
-/// A represents an allocated stack.
-#[derive(Clone, Copy, Debug)]
-pub struct Stack {
-    base: *mut u8,
-    size: usize,
-}
-
-impl Stack {
-    pub(crate) fn new(stack: &'static mut [u8]) -> Self {
-        let base = stack.as_mut_ptr();
-        let top = base.addr() + stack.len();
-        assert!(top.is_multiple_of(16), "stack must be 16-byte aligned");
-        assert!(!stack.is_empty(), "stack must be non-empty");
-        Self {
-            base,
-            size: stack.len(),
-        }
-    }
-
-    /// The base of the stack.
-    pub const fn base(&self) -> *mut u8 {
-        self.base
-    }
-
-    /// The top of the stack.
-    pub const fn top(&self) -> *mut u8 {
-        unsafe { self.base.add(self.size) }
-    }
-
-    /// The size of the stack.
-    pub const fn size(&self) -> usize {
-        self.size
     }
 }
 
