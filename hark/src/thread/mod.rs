@@ -17,7 +17,7 @@ use crate::heap::{self, Box, Stack};
 const MAX_NUM_THREADS: usize = 32;
 
 // TODO: parameterize via environment variable.
-pub(crate) const BOOT_STACK_SIZE: u64 = 0x1000;
+pub(crate) const BOOT_STACK_SIZE: u64 = 0x1800; // 6KiB
 
 // The boot stack.
 global_asm!(
