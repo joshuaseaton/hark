@@ -34,7 +34,7 @@ impl Range {
 }
 
 /// A represents an allocated stack.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct Stack {
     base: *mut u8,
     size: usize,

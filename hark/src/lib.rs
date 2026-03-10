@@ -10,6 +10,7 @@ pub mod arch;
 pub mod debug;
 pub mod heap;
 pub mod platform;
+pub mod thread;
 
 pub(crate) mod shell;
 
@@ -91,17 +92,15 @@ extern "C" fn hark_main() {
     print_console_info();
 
     arch::init();
-
     platform::init_post_console();
-
     heap::init();
+    thread::init();
 
-    // TODO: Run this in a thread. It currently just exits immediately.
+    shell::run_in_background();
+
     unsafe {
         hark_app_main();
     }
-    // Nothing else to do, so drop into the shell.
-    shell::enter();
 }
 
 //

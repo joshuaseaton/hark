@@ -4,25 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-use core::arch::{global_asm, naked_asm};
+use core::arch::naked_asm;
 use libarch::riscv::csr::Mstatus;
 
 use crate::arch::riscv::{load, store};
-
-const STACK_SIZE: u64 = 0x1000;
-
-// TODO: Define this via a more generic asm object macro?
-global_asm!(
-    r#"
-    .pushsection .bss.stack, "aw", %nobits
-    .balign 16
-    stack:
-    .skip {stack_size}
-    .Lstack_end:
-    .popsection
-    "#,
-    stack_size = const STACK_SIZE,
-);
 
 #[unsafe(no_mangle)]
 #[unsafe(naked)]
@@ -79,12 +64,13 @@ extern "C" fn _start() {
           blt t0, t1, 0b
         1:
 
-        // Our stack is now ready.
-          la sp, .Lstack_end
+        // Our boot stack has been zeroed and is now ready to use.
+        // Note that boot_stack_end is defined in the top-level thread module.
+          la sp, boot_stack_end
 
         // Tail into hark_main, as there's real benefit to keeping this
         // callframe around.
-          call hark_main
+          tail hark_main
         "#,
         reg_size = const size_of::<usize>(),
         mstatus_mie = const Mstatus::MIE_BIT,

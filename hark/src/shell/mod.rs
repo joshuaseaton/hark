@@ -8,6 +8,7 @@ use heapless::Vec;
 
 use crate::platform::console;
 use crate::print;
+use crate::thread::Thread;
 
 const BUFFER_SIZE: usize = 128;
 const PROMPT: &[u8; 2] = b"$ ";
@@ -81,7 +82,12 @@ const ENTER: u8 = 0x0d;
 const ESC: u8 = 0x1b;
 const BACKSPACE: u8 = 0x7f;
 
-pub(crate) fn enter() -> ! {
+pub(super) fn run_in_background() {
+    let thread = Thread::with_stack_size(|| enter(), 0x1000);
+    thread.start();
+}
+
+fn enter() -> ! {
     console::write(b"Entering shell...\n\r");
     console::write(PROMPT);
 
@@ -159,6 +165,7 @@ pub(crate) fn enter() -> ! {
                 _ => {}
             }
         }
+        crate::thread::yield_now();
     }
 }
 

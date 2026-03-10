@@ -8,9 +8,12 @@
 #![no_main]
 
 use hark::println;
+use hark::thread;
 
-// TODO: do much more.
 #[unsafe(no_mangle)]
 extern "Rust" fn hark_app_main() {
-    println!("Example: Hello from a Hark app!");
+    println!("Hello from a Hark app!");
+    loop {
+        thread::yield_now();
+    }
 }

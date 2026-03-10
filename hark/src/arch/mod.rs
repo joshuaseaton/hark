@@ -11,6 +11,8 @@ cfg_if::cfg_if! {
     }
 }
 
+pub(crate) use backend::thread;
+
 pub(crate) fn init() {
     backend::init();
 }

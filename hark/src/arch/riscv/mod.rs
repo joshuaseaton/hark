@@ -6,6 +6,7 @@
 
 mod exception;
 mod start;
+pub(crate) mod thread;
 mod timer;
 
 use core::{fmt, mem, ptr};
