@@ -27,21 +27,21 @@ struct Dispatcher {
     handlers: [fn(); backend::MAX_IRQ as usize],
 }
 
-pub(crate) fn init() {
+pub fn init() {
     set_dispatcher(Dispatcher {
         controller: backend::interrupt_controller(),
         handlers: [|| unimplemented!(); backend::MAX_IRQ as usize],
     });
 }
 
-pub(crate) fn claim_pending_irq() -> u32 {
+pub fn claim_pending_irq() -> u32 {
     get_dispatcher()
         .controller
         .claim_pending_irq()
         .expect("no pending interrupt!")
 }
 
-pub(crate) fn handle(irq: u32) {
+pub fn handle(irq: u32) {
     let dispatcher = get_dispatcher();
     dispatcher.handlers[irq as usize]();
     dispatcher.controller.complete_irq(irq);

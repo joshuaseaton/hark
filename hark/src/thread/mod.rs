@@ -5,11 +5,11 @@
 // https://opensource.org/licenses/MIT
 
 mod scheduler;
-use scheduler::{Descriptor, State, scheduler};
+use scheduler::*;
 
 mod stack;
 pub use stack::Stack;
-use stack::boot_stack;
+use stack::*;
 
 use core::ptr;
 

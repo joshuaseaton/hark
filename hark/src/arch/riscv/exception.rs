@@ -18,7 +18,7 @@ use crate::panic_common;
 use crate::platform;
 use crate::{print, println};
 
-pub(super) fn init() {
+pub fn init() {
     let entry = (exception_entry as *const ()).addr();
     Mtvec::from(0)
         .set_base(entry)

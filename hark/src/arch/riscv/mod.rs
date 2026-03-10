@@ -6,7 +6,7 @@
 
 mod exception;
 mod start;
-pub(crate) mod thread;
+pub mod thread;
 mod timer;
 
 use core::{fmt, mem, ptr};
@@ -32,11 +32,11 @@ pub(crate) use {load, store};
 
 #[repr(C)]
 #[derive(Debug, Default)]
-pub(crate) struct PerCpu {}
+pub struct PerCpu {}
 
 #[repr(C)]
 #[derive(Debug, Default)]
-pub(crate) struct Regs {
+pub struct Regs {
     pub pc: usize,
     pub ra: usize,
     pub sp: usize,

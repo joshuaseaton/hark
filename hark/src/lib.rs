@@ -10,9 +10,8 @@ pub mod arch;
 pub mod debug;
 pub mod heap;
 pub mod platform;
+mod shell;
 pub mod thread;
-
-pub(crate) mod shell;
 
 mod panic;
 pub(crate) use panic::*;

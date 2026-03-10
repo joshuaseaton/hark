@@ -12,7 +12,7 @@ use crate::thread::thread_exit;
 
 // Call-preserved registers for context switching.
 #[repr(C)]
-pub(crate) struct Context {
+pub struct Context {
     ra: usize,
     sp: usize,
     s0: usize,

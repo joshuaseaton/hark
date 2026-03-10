@@ -26,14 +26,14 @@ fn get_timer() -> &'static Mtimer {
     unsafe { (*&raw const TIMER).assume_init_ref() }
 }
 
-pub(crate) fn init() {
+pub fn init() {
     set_timer(Mtimer::new(
         RISCV_MTIMER_TIME_ADDRESS,
         RISCV_MTIMER_TIMECMP_ADDRESS,
     ));
 }
 
-pub(crate) fn handle_exception() {}
+pub fn handle_exception() {}
 
 #[offset(0)]
 #[repr(transparent)]

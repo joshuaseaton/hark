@@ -87,9 +87,7 @@ impl Scheduler {
 
     pub fn reschedule(&mut self, old_state: State) {
         let Some(next_id) = self.run_queue.pop_front() else {
-            if old_state == State::Exited {
-                panic!("all threads exited");
-            }
+            assert!(old_state != State::Exited, "all threads exited");
             return;
         };
         self.switch_to(next_id, old_state);

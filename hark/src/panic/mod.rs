@@ -24,7 +24,7 @@ pub fn panic(info: &PanicInfo) -> ! {
 }
 
 // Common panic routine for use within panic!() and in exception handling.
-pub(crate) fn panic_common<PrintContext: FnOnce()>(
+pub fn panic_common<PrintContext: FnOnce()>(
     fp: usize,
     pc: Option<usize>,
     context: PrintContext,

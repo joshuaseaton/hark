@@ -10,7 +10,7 @@ pub mod uart;
 
 use core::fmt;
 
-pub(crate) trait Console {
+pub trait Console {
     fn describe(&self, w: &mut impl fmt::Write);
     fn write(&self, bytes: &[u8]);
 

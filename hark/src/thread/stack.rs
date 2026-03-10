@@ -8,7 +8,7 @@ use core::arch::global_asm;
 use core::slice;
 
 // TODO: parameterize via environment variable.
-pub(crate) const BOOT_STACK_SIZE: u64 = 0x1800; // 6KiB
+pub const BOOT_STACK_SIZE: u64 = 0x1800; // 6KiB
 
 // The boot stack.
 global_asm!(
@@ -29,7 +29,7 @@ unsafe extern "C" {
     static boot_stack_start: u8;
 }
 
-pub(crate) fn boot_stack() -> Stack {
+pub fn boot_stack() -> Stack {
     let stack = unsafe {
         slice::from_raw_parts_mut(
             (&raw const boot_stack_start).cast_mut(),

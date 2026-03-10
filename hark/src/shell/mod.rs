@@ -82,7 +82,7 @@ const ENTER: u8 = 0x0d;
 const ESC: u8 = 0x1b;
 const BACKSPACE: u8 = 0x7f;
 
-pub(super) fn run_in_background() {
+pub fn run_in_background() {
     let thread = Thread::with_stack_size(0x1000, || enter());
     thread.start();
 }
