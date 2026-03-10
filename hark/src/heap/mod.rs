@@ -41,7 +41,6 @@ pub struct Stack {
 }
 
 impl Stack {
-    #[allow(unused)]
     pub(crate) fn new(stack: &'static mut [u8]) -> Self {
         let base = stack.as_mut_ptr();
         let top = base.addr() + stack.len();
@@ -187,16 +186,5 @@ pub fn allocate(size: usize, align: usize) -> &'static mut [u8] {
 ///
 /// Panics on OOM.
 pub fn allocate_stack(size: usize) -> Stack {
-    assert!(size > 0);
-
-    let alloc = allocator();
-    let top = alloc.back & !0xf;
-    let base = top - size;
-    assert!(base >= alloc.front, "OOM!");
-
-    alloc.back = base;
-    Stack {
-        base: base as *mut u8,
-        size,
-    }
+    Stack::new(allocate(size, 16))
 }
