@@ -112,7 +112,7 @@ fn enter() -> ! {
                         ctrl_seq = None;
                     }
                     // Either we handled a control sequence or are still in the
-                    // midst of building one up. In either case, continue;
+                    // midst of building one up. In either case, continue.
                     continue;
                 }
                 // `ch` isn't the next character in a supported control

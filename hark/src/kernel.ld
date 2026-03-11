@@ -40,7 +40,7 @@ SECTIONS {
     *(.note.gnu.build-id)
     __note_gnu_build_id_end = .;
   } > BOOT_FLASH
-  /* The build ID note is of a known, fixed size */
+  /* The build ID note header is of a known, fixed size */
   PROVIDE_HIDDEN(__build_id_start = __note_gnu_build_id_start + 16);
 
   /*

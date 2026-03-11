@@ -39,7 +39,7 @@ pub fn boot_stack() -> Stack {
     Stack::new(stack)
 }
 
-/// A represents an allocated stack.
+/// Represents an allocated stack.
 #[derive(Clone, Copy, Debug)]
 pub struct Stack {
     base: *mut u8,

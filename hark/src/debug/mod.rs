@@ -67,7 +67,7 @@ fn init_build_id() {
 /// This will panic if the .note.gnu.build-id section contains a malformed GNU
 /// build ID note.
 pub fn build_id() -> BuildId {
-    // Saftey: This should only be accessed after init_build_id() and is
+    // Safety: This should only be accessed after init_build_id() and is
     // read-only.
     unsafe { BUILD_ID.assume_init() }
 }
@@ -103,7 +103,7 @@ fn print_reset_element() {
 
 #[inline(never)]
 fn print_module_element() {
-    // This may be called before the build ID was parsed, and maybe are even
+    // This may be called before the build ID was parsed, and we may even be
     // mid-panic due to a malformed build ID.
     let build_id = build_id();
     if !build_id.is_empty() {

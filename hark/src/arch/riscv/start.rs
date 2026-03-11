@@ -68,7 +68,7 @@ extern "C" fn _start() {
         // Note that boot_stack_end is defined in the top-level thread module.
           la sp, boot_stack_end
 
-        // Tail into hark_main, as there's real benefit to keeping this
+        // Tail into hark_main, as there's no real benefit to keeping this
         // callframe around.
           tail hark_main
         "#,

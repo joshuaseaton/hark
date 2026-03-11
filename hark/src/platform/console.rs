@@ -35,7 +35,7 @@ pub fn write(bytes: &[u8]) {
     get_console().write(bytes);
 }
 
-// Writs a byte to the platform-defined console.
+// Writes a byte to the platform-defined console.
 pub fn write_byte(byte: u8) {
     write(&[byte; 1]);
 }

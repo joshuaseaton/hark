@@ -80,7 +80,7 @@ impl fmt::Display for ImplementationId {
             ImplementationId::RUST_SBI => write!(f, "Rust SBI"),
             ImplementationId::DIOSIX => write!(f, "Diosix"),
             ImplementationId::COFFER => write!(f, "Coffer"),
-            other => write!(f, "unknown SBI implementation ({other:#x}"),
+            other => write!(f, "unknown SBI implementation ({other:#x})"),
         }
     }
 }
