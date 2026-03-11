@@ -8,7 +8,7 @@ pub mod console;
 pub(crate) mod interrupt;
 pub mod power;
 
-#[cfg_attr(platform = "qemu-virt-riscv", path = "qemu_virt_riscv.rs")]
+#[cfg_attr(platform = "qemu-virt-riscv", path = "backend/qemu_virt_riscv.rs")]
 mod backend;
 
 cfg_if::cfg_if! {
