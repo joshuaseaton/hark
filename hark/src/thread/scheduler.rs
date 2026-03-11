@@ -22,7 +22,7 @@ fn set_scheduler(sched: Scheduler) {
     }
 }
 
-pub fn scheduler() -> &'static mut Scheduler {
+fn scheduler() -> &'static mut Scheduler {
     unsafe { (*&raw mut SCHEDULER).assume_init_mut() }
 }
 
@@ -34,44 +34,78 @@ pub enum State {
     Exited,
 }
 
-pub struct Descriptor {
+struct Descriptor {
     pub context: Context,
     pub state: State,
     pub _stack: Stack,
 }
 
-pub struct Scheduler {
+struct Scheduler {
     pub threads: Vec<Descriptor, MAX_NUM_THREADS>,
     pub run_queue: Deque<ThreadId, MAX_NUM_THREADS>,
     pub current: ThreadId,
 }
 
 pub fn init() {
+    let current = ThreadId(0);
+    let mut run_queue = Deque::new();
+    run_queue.push_back(current).unwrap();
     set_scheduler(Scheduler {
         threads: Vec::from([Descriptor {
             context: Context::zero(),
             state: State::Running,
             _stack: boot_stack(),
         }]),
-        run_queue: Deque::new(),
-        current: ThreadId(0),
+        run_queue,
+        current,
     });
 }
 
+pub fn create_thread(context: Context, stack: Stack) -> ThreadId {
+    scheduler().create_thread(context, stack)
+}
+
+pub fn start_thread(id: ThreadId) {
+    scheduler().start_thread(id);
+}
+
+pub fn reschedule(old_state: State) {
+    scheduler().reschedule(old_state);
+}
+
 impl Scheduler {
-    pub fn get_thread(&self, id: ThreadId) -> &Descriptor {
+    fn get_thread(&self, id: ThreadId) -> &Descriptor {
         &self.threads[id.0]
     }
 
-    pub fn get_thread_mut(&mut self, id: ThreadId) -> &mut Descriptor {
+    fn get_thread_mut(&mut self, id: ThreadId) -> &mut Descriptor {
         &mut self.threads[id.0]
     }
 
-    pub fn next_id(&self) -> ThreadId {
-        ThreadId(self.threads.len())
+    fn create_thread(&mut self, context: Context, stack: Stack) -> ThreadId {
+        let desc = Descriptor {
+            context,
+            state: State::Created,
+            _stack: stack,
+        };
+        // TODO: critical section start.
+        let id = ThreadId(self.threads.len());
+        let _ = self.threads.push(desc);
+        // TODO: critical section end.
+        id
     }
 
-    pub fn switch_to(&mut self, next_id: ThreadId, old_state: State) {
+    fn start_thread(&mut self, id: ThreadId) {
+        // TODO: critical section start.
+        let desc = self.get_thread_mut(id);
+        assert_eq!(desc.state, State::Created, "thread already started");
+        desc.state = State::Ready;
+        let _ = self.run_queue.push_back(id);
+        // TODO: critical section end.
+    }
+
+    fn switch_to(&mut self, next_id: ThreadId, old_state: State) {
+        // TODO: critical section
         let current_id = self.current;
         self.get_thread_mut(current_id).state = old_state;
         if old_state == State::Ready {
@@ -85,11 +119,15 @@ impl Scheduler {
         unsafe { (*old).switch(&*new) };
     }
 
-    pub fn reschedule(&mut self, old_state: State) {
+    fn reschedule(&mut self, old_state: State) {
+        // TODO: critical section
         let Some(next_id) = self.run_queue.pop_front() else {
             assert!(old_state != State::Exited, "all threads exited");
             return;
         };
+        if next_id == self.current {
+            return;
+        }
         self.switch_to(next_id, old_state);
     }
 }

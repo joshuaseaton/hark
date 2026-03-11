@@ -16,31 +16,23 @@ const TIMECMP_APERTURE_SIZE: usize = 0x7ff8;
 
 static mut TIMER: MaybeUninit<Mtimer> = MaybeUninit::uninit();
 
-fn set_timer(timer: Mtimer) {
-    unsafe {
-        (*&raw mut TIMER).write(timer);
-    }
-}
-
 fn get_timer() -> &'static Mtimer {
     unsafe { (*&raw const TIMER).assume_init_ref() }
 }
 
 pub fn init() {
-    set_timer(Mtimer::new(
-        RISCV_MTIMER_TIME_ADDRESS,
-        RISCV_MTIMER_TIMECMP_ADDRESS,
-    ));
+    let timer = Mtimer::new(RISCV_MTIMER_TIME_ADDRESS, RISCV_MTIMER_TIMECMP_ADDRESS);
+    unsafe {
+        (*&raw mut TIMER).write(timer);
+    }
 }
-
-pub fn handle_exception() {}
 
 #[offset(0)]
 #[repr(transparent)]
 #[derive(Debug, Deref, From)]
 struct Mtime(u64);
 
-#[array(0x8)]
+#[array(0)]
 #[repr(transparent)]
 #[derive(Debug, Deref, From)]
 struct Mtimecmp(u64);
@@ -183,8 +175,7 @@ pub fn read_time() -> u64 {
     *Mtime::read_from(&get_timer().time_io)
 }
 
-#[allow(unused)]
-fn set(time: u64) {
+pub fn set(time: u64) {
     Mtimecmp::from(time).write_nth_to(
         &get_timer().timer_io,
         arch::riscv::current_cpu_number() as usize,

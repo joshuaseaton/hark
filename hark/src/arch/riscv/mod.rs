@@ -14,7 +14,7 @@ use core::{fmt, mem, ptr};
 use libarch::riscv::csr::{Marchid, Mhartid, Mimpid, Misa, Mscratch, Mstatus, Mvendorid};
 use regio::Register as _;
 
-use crate::{ConsoleWitness, print, println};
+use crate::{ConsoleWitness, ThreadWitness, print, println};
 
 #[used]
 static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
@@ -130,6 +130,12 @@ pub fn init(_: &ConsoleWitness) {
     exception::init();
     timer::init();
     print_machine_context();
+}
+
+#[inline]
+pub fn late_init(_: &ThreadWitness) {
+    // This enables preemptive scheduling.
+    exception::enable_timer_interrupts();
 }
 
 #[inline(never)]

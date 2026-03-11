@@ -165,7 +165,6 @@ fn enter() -> ! {
                 _ => {}
             }
         }
-        crate::thread::yield_now();
     }
 }
 

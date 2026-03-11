@@ -13,6 +13,7 @@ use stack::*;
 
 use core::ptr;
 
+use crate::ThreadWitness;
 use crate::arch::thread::Context;
 use crate::heap::{self, Box};
 
@@ -52,13 +53,7 @@ impl Thread {
 
     fn create(entry: usize, arg: usize, stack: Stack) -> Self {
         let ctx = Context::new(stack.top().addr(), entry, arg);
-        let sched = scheduler();
-        let id = sched.next_id();
-        let _ = sched.threads.push(Descriptor {
-            context: ctx,
-            state: State::Created,
-            _stack: stack,
-        });
+        let id = scheduler::create_thread(ctx, stack);
         Thread { id }
     }
 
@@ -68,11 +63,7 @@ impl Thread {
     ///
     /// Panics if the thread has already been started.
     pub fn start(&self) {
-        let sched = scheduler();
-        let desc = sched.get_thread_mut(self.id);
-        assert_eq!(desc.state, State::Created, "thread already started");
-        desc.state = State::Ready;
-        let _ = sched.run_queue.push_back(self.id);
+        scheduler::start_thread(self.id);
     }
 }
 
@@ -101,17 +92,18 @@ fn type_erase<F: FnOnce() + Send + 'static>(entry: F) -> (usize, usize) {
 }
 
 // Initializes threading, registering the boot context as thread 0.
-pub(crate) fn init() {
+pub(crate) fn init() -> ThreadWitness {
     scheduler::init();
+    ThreadWitness {}
 }
 
 /// Yields the current thread, switching to the next ready thread.
 ///
 /// No-op if no other threads are ready.
 pub fn yield_now() {
-    scheduler().reschedule(State::Ready);
+    scheduler::reschedule(State::Ready);
 }
 
 pub(crate) fn thread_exit() {
-    scheduler().reschedule(State::Exited);
+    scheduler::reschedule(State::Exited);
 }

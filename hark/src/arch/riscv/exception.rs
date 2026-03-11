@@ -14,9 +14,9 @@ use regio::Register as _;
 
 use crate::arch::riscv::timer;
 use crate::arch::riscv::{Regs, enable_interrupts, load, store};
-use crate::panic_common;
 use crate::platform;
-use crate::{print, println};
+use crate::thread;
+use crate::{panic_common, print, println};
 
 pub fn init() {
     let entry = (exception_entry as *const ()).addr();
@@ -29,6 +29,12 @@ pub fn init() {
     // TODO: support more!
     Mie::from(0).set_meie(true).write();
     enable_interrupts();
+}
+
+pub fn enable_timer_interrupts() {
+    Mie::modify(|mie| {
+        mie.set_mtie(true);
+    });
 }
 
 #[repr(C)]
@@ -112,9 +118,6 @@ extern "C" fn exception_entry() {
         .Linterrupt:
           call handle_interrupt
         "#,
-
-        // On handle_interrupt() exit, interrupts are disabled and CSR state has
-        // been restored, leaving the registers.
 
         load!("ra, {ra_offset}(sp)"),
         // We restore sp last, since everything else depends on the current
@@ -229,10 +232,12 @@ extern "C" fn handle_interrupt(frame: &TrapFrame) {
     let code = frame.mcause.interrupt_code();
     match code {
         InterruptCode::MACHINE_TIMER_INTERRUPT => {
-            timer::handle_exception();
+            // TODO: convert to 10ms
+            timer::set(timer::read_time().wrapping_add(0x10_0000));
+            thread::yield_now();
         }
         InterruptCode::MACHINE_EXTERNAL_INTERRUPT => {
-            handle_external_interrupt(frame);
+            handle_external_interrupt();
         }
         _ => panic_common(frame.regs.s0, Some(frame.regs.pc), || {
             println!("Unsupported interrupt: {code}");
@@ -240,12 +245,6 @@ extern "C" fn handle_interrupt(frame: &TrapFrame) {
             println!("Registers:\n{}", frame.regs);
         }),
     }
-}
-
-fn handle_external_interrupt(frame: &TrapFrame) {
-    let irq = platform::interrupt::claim_pending_irq();
-
-    platform::interrupt::handle(irq);
 
     // We restore mepc and the mstatus.{mpie, mpp} ahead of the mret. Easier to
     // do that here then in the assembly epilogue.
@@ -255,4 +254,10 @@ fn handle_external_interrupt(frame: &TrapFrame) {
             .set_mpie(frame.mstatus.mpie())
             .set_mpp(frame.mstatus.mpp());
     });
+}
+
+fn handle_external_interrupt() {
+    let irq = platform::interrupt::claim_pending_irq();
+
+    platform::interrupt::handle(irq);
 }

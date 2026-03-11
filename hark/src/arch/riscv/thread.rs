@@ -7,11 +7,14 @@
 use core::arch::naked_asm;
 use core::mem::offset_of;
 
+use libarch::riscv::csr::Mstatus;
+
 use super::{load, store};
 use crate::thread::thread_exit;
 
 // Call-preserved registers for context switching.
 #[repr(C)]
+#[derive(Debug)]
 pub struct Context {
     ra: usize,
     sp: usize,
@@ -75,10 +78,14 @@ impl Context {
 #[unsafe(naked)]
 unsafe extern "C" fn trampoline() {
     naked_asm!(
+        // We may be jumping onto the trampoline from an interrupt context, in
+        // which case this the opportunity to re-enable interrupts.
+        "csrsi mstatus, {mie_mask}",
         "mv a0, s2",
         "jalr s1",
         // If we return, then we tail into the thread exit routine.
         "tail {thread_exit}",
+        mie_mask = const (1 << Mstatus::MIE_BIT), // TODO: Why no MIE_MASK?
         thread_exit = sym thread_exit,
     );
 }

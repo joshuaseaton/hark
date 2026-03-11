@@ -28,7 +28,7 @@ extern "C" fn _start() {
         "#,
         r#"
         // Mask all interrupts in case a prior bootloader left them.
-          csrc mstatus, {mstatus_mie}
+          csrc mstatus, {mstatus_mask}
           csrw mie, zero
 
         // Reset the trap vector base address register, just in case a prior
@@ -73,6 +73,6 @@ extern "C" fn _start() {
           tail hark_main
         "#,
         reg_size = const size_of::<usize>(),
-        mstatus_mie = const Mstatus::MIE_BIT,
+        mstatus_mask = const (1 << Mstatus::MIE_BIT), // TODO: MIE_MASK
     )
 }

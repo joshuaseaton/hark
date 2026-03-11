@@ -13,10 +13,14 @@ cfg_if::cfg_if! {
 
 pub(crate) use backend::thread;
 
-use crate::ConsoleWitness;
+use crate::{ConsoleWitness, ThreadWitness};
 
 pub(crate) fn init(console: &ConsoleWitness) {
     backend::init(console);
+}
+
+pub(crate) fn late_init(thread: &ThreadWitness) {
+    backend::late_init(thread);
 }
 
 /// Returns the current CPU number.

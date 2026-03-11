@@ -82,8 +82,11 @@ unsafe extern "Rust" {
 // instance of the witness; steps that depend on such an initialization take the
 // witness type as a parameter.
 
-// Init routines that assume the ability to print.
+// For init routines that assume the ability to print.
 pub(crate) struct ConsoleWitness {}
+
+// For init routines that assume threading.
+pub(crate) struct ThreadWitness {}
 
 // Jumped to from _start after initialization.
 #[unsafe(no_mangle)]
@@ -101,7 +104,9 @@ extern "C" fn hark_main() {
     arch::init(&console);
     platform::init(&console);
     heap::init();
-    thread::init();
+    let thread = thread::init();
+
+    arch::late_init(&thread);
 
     shell::run_in_background();
 
