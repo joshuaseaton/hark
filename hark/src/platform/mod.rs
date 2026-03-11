@@ -7,6 +7,9 @@
 pub mod console;
 pub(crate) mod interrupt;
 pub mod power;
+mod time;
+
+pub use time::Time;
 
 #[cfg_attr(platform = "qemu-virt-riscv", path = "backend/qemu_virt_riscv.rs")]
 mod backend;

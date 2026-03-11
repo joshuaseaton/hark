@@ -14,7 +14,7 @@ use regio::Register as _;
 
 use crate::arch::riscv::timer;
 use crate::arch::riscv::{Regs, enable_interrupts, load, store};
-use crate::platform;
+use crate::platform::{self, Time};
 use crate::thread;
 use crate::{panic_common, print, println};
 
@@ -232,8 +232,9 @@ extern "C" fn handle_interrupt(frame: &TrapFrame) {
     let code = frame.mcause.interrupt_code();
     match code {
         InterruptCode::MACHINE_TIMER_INTERRUPT => {
-            // TODO: convert to 10ms
-            timer::set(timer::read_time().wrapping_add(0x10_0000));
+            // TODO: 10ms for now; tickless later.
+            const PERIOD: u64 = Time::from_milliseconds(10).to_ticks();
+            timer::set(timer::read_time().wrapping_add(PERIOD));
             thread::yield_now();
         }
         InterruptCode::MACHINE_EXTERNAL_INTERRUPT => {

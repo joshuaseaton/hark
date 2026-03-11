@@ -20,6 +20,8 @@ const UART_ADDR: usize = 0x1000_0000;
 const PLIC_ADDR: usize = 0x0c00_0000;
 pub const MAX_IRQ: u32 = 96;
 
+pub const TIMER_FREQUENCY: u64 = 10_000_000; // 10 MHz
+
 // Constrained to 64KiB for discipline's sake.
 // TODO: bring this down.
 pub const RAM: heap::Range = heap::Range {
