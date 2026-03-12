@@ -1,7 +1,6 @@
 # Hark
 
-## Development
+Hark ("**H**ere, **a**nother **R**ust **k**ernel") is an embedded Rust
+microkernel.
 
-### Handy references
-
-* Source of truth for rustc's target features: https://doc.rust-lang.org/nightly/nightly-rustc/src/rustc_target/target_features.rs.html
+TODO: Say more!
