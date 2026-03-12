@@ -30,6 +30,11 @@ too_many_arguments = "allow"
 too_many_lines = "allow"
 wildcard_imports = "allow"
 
+[workspace.lints.rustdoc]
+# Otherwise we would get complaints about shell command docstrings (e.g., with
+# it interpreting `help [<command>]` as an unclosed HTML tag.
+invalid_html_tags = "allow"
+
 [profile.dev]
 opt-level = 1
 

@@ -4,6 +4,22 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
+mod command;
+pub use command::*;
+
+/// Registers a function as a command in the hark shell.
+///
+/// The function must have the signature `fn(`[`Args`]`)`.
+/// A doc comment is required and serves as the long-form description shown
+/// by `help <command>`.
+///
+/// ## Parameters
+///
+///   - *Required:* `help = "<string>"`, a one-line description shown in the
+///     command listing (i.e., when you run `help` without arguments).
+///
+pub use hark_macro::shell_command as command;
+
 use heapless::Vec;
 
 use crate::platform::console;
@@ -82,7 +98,9 @@ const ENTER: u8 = 0x0d;
 const ESC: u8 = 0x1b;
 const BACKSPACE: u8 = 0x7f;
 
-pub fn run_in_background() {
+pub(super) fn run_in_background() {
+    command::init();
+
     let thread = Thread::with_stack_size(0x1000, || enter());
     thread.start();
 }
@@ -134,8 +152,15 @@ fn enter() -> ! {
                 }
                 ENTER => {
                     console::write(b"\n\r");
+                    if !displayed.is_empty() {
+                        // Safety: these bytes only contain printable ASCII
+                        // characters.
+                        let displayed_str = unsafe { str::from_utf8_unchecked(&displayed) };
+                        command::dispatch(displayed_str);
+                    }
                     console::write(PROMPT);
                     cursor = 0; // Reset by \r
+
                     displayed.clear();
                 }
                 ESC => ctrl_seq = Some(ControlSequence::Esc),

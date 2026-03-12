@@ -49,7 +49,18 @@ SECTIONS {
    */
   .data : ALIGN(8) {
     PROVIDE_HIDDEN(__data_start = .);
+
+    /*
+     * Hark shell commands. Put in .data over .rodata so that the commands can
+     * be sorted in the shell's initialization
+     */
+    __data_hark_commands_start = .;
+    KEEP(*(.data.hark.commands))
+    __data_hark_commands_end = .;
+
+    . = ALIGN(8);
     *(.data*) *(.sdata*)
+
     . = ALIGN(8);
     PROVIDE_HIDDEN(__data_end = .);
   } > BOOT_RAM AT> BOOT_FLASH

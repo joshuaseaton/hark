@@ -1,0 +1,26 @@
+# Copyright (c) 2026 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+[package]
+name = "hark-macro"
+version.workspace = true
+edition.workspace = true
+
+categories = []
+description = "Proc macros for hark"
+keywords = []
+
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "2.0"
+
+[lib]
+proc-macro = true

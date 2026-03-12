@@ -8,10 +8,16 @@
 #![no_main]
 
 use hark::println;
-//use hark::thread;
+use hark::shell;
 
 #[unsafe(no_mangle)]
 extern "Rust" fn hark_app_main() {
     println!("Hello from a Hark app!");
     loop {}
+}
+
+/// This is a description of a custom shell command!
+#[shell::command(help = "This is a custom command")]
+fn custom(_: shell::Args) {
+    println!("The custom command was called!");
 }

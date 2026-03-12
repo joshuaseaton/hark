@@ -10,11 +10,16 @@ pub mod arch;
 pub mod debug;
 pub mod heap;
 pub mod platform;
-mod shell;
+pub mod shell;
 pub mod thread;
 
 mod panic;
 pub(crate) use panic::*;
+
+// Allows #[shell::command] works within hark, since its expansion includes item
+// paths under `::hark::shell`.
+#[doc(hidden)]
+extern crate self as hark;
 
 // There is naturally going to be a lot of dead device code in any given
 // configuration, so the lint here would be too noisy. We can at least permit
