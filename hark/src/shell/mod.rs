@@ -102,7 +102,7 @@ const BACKSPACE: u8 = 0x7f;
 pub(super) fn run_in_background() {
     command::init();
 
-    let thread = Thread::with_stack_size(0x1000, || enter());
+    let thread = Thread::with_stack_size("shell", 0x1000, || enter());
     thread.start();
 }
 

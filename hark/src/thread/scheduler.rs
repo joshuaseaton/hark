@@ -10,6 +10,8 @@ use heapless::{Deque, Vec};
 
 use super::{Stack, ThreadId, boot_stack};
 use crate::arch::thread::Context;
+use crate::println;
+use crate::shell::{self, Args};
 use crate::sync::InterruptGuard;
 
 // TODO: parameterize via environment variable.
@@ -35,10 +37,22 @@ pub enum State {
     Exited,
 }
 
+impl State {
+    const fn as_str(self) -> &'static str {
+        match self {
+            State::Created => "created",
+            State::Ready => "ready",
+            State::Running => "running",
+            State::Exited => "exited",
+        }
+    }
+}
+
 struct Descriptor {
+    pub name: &'static str,
     pub context: Context,
     pub state: State,
-    pub _stack: Stack,
+    pub stack: Stack,
 }
 
 struct Scheduler {
@@ -53,17 +67,18 @@ pub fn init() {
     run_queue.push_back(current).unwrap();
     set_scheduler(Scheduler {
         threads: Vec::from([Descriptor {
+            name: "boot",
             context: Context::zero(),
             state: State::Running,
-            _stack: boot_stack(),
+            stack: boot_stack(),
         }]),
         run_queue,
         current,
     });
 }
 
-pub fn create_thread(context: Context, stack: Stack) -> ThreadId {
-    scheduler().create_thread(context, stack)
+pub fn create_thread(name: &'static str, context: Context, stack: Stack) -> ThreadId {
+    scheduler().create_thread(name, context, stack)
 }
 
 pub fn start_thread(id: ThreadId) {
@@ -83,11 +98,12 @@ impl Scheduler {
         &mut self.threads[id.0]
     }
 
-    fn create_thread(&mut self, context: Context, stack: Stack) -> ThreadId {
+    fn create_thread(&mut self, name: &'static str, context: Context, stack: Stack) -> ThreadId {
         let desc = Descriptor {
+            name,
             context,
             state: State::Created,
-            _stack: stack,
+            stack,
         };
         {
             let _guard = InterruptGuard::new();
@@ -133,4 +149,27 @@ impl Scheduler {
         }
         self.switch_to(&guard, next_id, old_state);
     }
+}
+
+/// thread {list}
+///
+/// `list` will list all threads in the system.
+#[shell::command(help = "Inspect the threads in the system")]
+fn thread(mut args: Args) -> bool {
+    let Some(subcommand) = args.next() else {
+        return false;
+    };
+    if subcommand != "list" || args.next().is_some() {
+        return false;
+    }
+    let _guard = InterruptGuard::new();
+    for desc in &scheduler().threads {
+        println!(
+            " * {}: {}, stack size = {:#x}",
+            desc.name,
+            desc.state.as_str(),
+            desc.stack.size()
+        );
+    }
+    true
 }

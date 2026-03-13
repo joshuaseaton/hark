@@ -33,9 +33,13 @@ impl Thread {
     /// # Panics
     ///
     /// Panics if the stack is not 16-byte aligned or is empty.
-    pub fn with_stack(stack: &'static mut [u8], entry: impl FnOnce() + Send + 'static) -> Self {
+    pub fn with_stack(
+        name: &'static str,
+        stack: &'static mut [u8],
+        entry: impl FnOnce() + Send + 'static,
+    ) -> Self {
         let (fn_addr, arg_addr) = type_erase(entry);
-        Self::create(fn_addr, arg_addr, Stack::new(stack))
+        Self::create(name, fn_addr, arg_addr, Stack::new(stack))
     }
 
     /// Creates an unstarted thread with the given entry point and a
@@ -44,16 +48,20 @@ impl Thread {
     /// # Panics
     ///
     /// Panics if `stack_size` is 0.
-    pub fn with_stack_size(stack_size: usize, entry: impl FnOnce() + Send + 'static) -> Self {
+    pub fn with_stack_size(
+        name: &'static str,
+        stack_size: usize,
+        entry: impl FnOnce() + Send + 'static,
+    ) -> Self {
         assert!(stack_size > 0, "stack size must be non-zero");
         let stack = heap::allocate_stack(stack_size);
         let (fn_addr, arg_addr) = type_erase(entry);
-        Self::create(fn_addr, arg_addr, stack)
+        Self::create(name, fn_addr, arg_addr, stack)
     }
 
-    fn create(entry: usize, arg: usize, stack: Stack) -> Self {
+    fn create(name: &'static str, entry: usize, arg: usize, stack: Stack) -> Self {
         let ctx = Context::new(stack.top().addr(), entry, arg);
-        let id = scheduler::create_thread(ctx, stack);
+        let id = scheduler::create_thread(name, ctx, stack);
         Thread { id }
     }
 
