@@ -7,8 +7,9 @@
 #![no_std]
 #![no_main]
 
-use hark::println;
 use hark::shell;
+use hark::testing;
+use hark::{println, test};
 
 #[unsafe(no_mangle)]
 extern "Rust" fn hark_app_main() {
@@ -16,9 +17,29 @@ extern "Rust" fn hark_app_main() {
     loop {}
 }
 
+//
+// Example shell command.
+//
+
 /// This is a description of a custom shell command!
 #[shell::command(help = "This is a custom command")]
 fn custom(_: shell::Args) -> bool {
     println!("The custom command was called!");
     true
+}
+//
+// Example tests.
+//
+
+#[test]
+fn sanity() -> Result<(), testing::Failure> {
+    testing::check_eq!(1 + 1, 2);
+    Ok(())
+}
+
+#[allow(clippy::const_is_empty)]
+#[test]
+fn fail_demo() -> Result<(), testing::Failure> {
+    testing::check!("non-empty".is_empty());
+    Ok(())
 }

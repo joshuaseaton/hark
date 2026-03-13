@@ -12,6 +12,7 @@ pub mod heap;
 pub mod platform;
 pub mod shell;
 pub mod sync;
+pub mod testing;
 pub mod thread;
 
 mod panic;
@@ -21,6 +22,11 @@ pub(crate) use panic::*;
 // paths under `::hark::shell`.
 #[doc(hidden)]
 extern crate self as hark;
+
+/// Registers a function as a kernel test case.
+///
+/// The function must have the signature `fn() -> Result<(), `[`Failure`](`testing::Failure`)`>`.
+pub use hark_macro::hark_test as test;
 
 // There is naturally going to be a lot of dead device code in any given
 // configuration, so the lint here would be too noisy. We can at least permit
@@ -114,6 +120,7 @@ extern "C" fn hark_main() {
 
     arch::late_init(&thread);
 
+    testing::init();
     shell::run_in_background();
 
     unsafe {

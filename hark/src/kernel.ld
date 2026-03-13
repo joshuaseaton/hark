@@ -51,12 +51,22 @@ SECTIONS {
     PROVIDE_HIDDEN(__data_start = .);
 
     /*
-     * Hark shell commands. Put in .data over .rodata so that the commands can
-     * be sorted in the shell's initialization
+     * Hark shell command metadata. Put in .data over .rodata so that the
+     * entries can be sorted in the shell's initialization. This allows for a
+     * cheap ordered listing of commands.
      */
     __data_hark_commands_start = .;
     KEEP(*(.data.hark.commands))
     __data_hark_commands_end = .;
+
+    /*
+     * Hark test metadata. Similarly put in .data over .rodata so that entries
+     * can be sorted early in boot.
+     */
+    . = ALIGN(8);
+    __data_hark_tests_start = .;
+    KEEP(*(.data.hark.tests))
+    __data_hark_tests_end = .;
 
     . = ALIGN(8);
     *(.data*) *(.sdata*)

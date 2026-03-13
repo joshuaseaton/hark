@@ -5,9 +5,43 @@
 // https://opensource.org/licenses/MIT
 
 use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::parse::{self, Parse, ParseStream};
-use syn::{Expr, ExprLit, Ident, ItemFn, Lit, LitStr, Meta, Token, parse_macro_input};
+use syn::{Error, Expr, ExprLit, Ident, ItemFn, Lit, LitStr, Meta, Token, parse_macro_input};
+
+// See docstring on the re-export in the hark crate.
+#[proc_macro_attribute]
+pub fn hark_test(attr: TokenStream, item: TokenStream) -> TokenStream {
+    if !attr.is_empty() {
+        return Error::new_spanned(
+            TokenStream2::from(attr),
+            "hark_test takes no attribute parameters",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    let func = parse_macro_input!(item as ItemFn);
+    let name = &func.sig.ident;
+    let name_str = name.to_string();
+    let const_name = format_ident!("HARK_TEST_{}", name_str.to_uppercase());
+
+    quote! {
+        #[used]
+        #[unsafe(link_section = ".data.hark.tests")]
+        static #const_name: ::hark::testing::TestSpec = ::hark::testing::TestSpec {
+            suite: module_path!(),
+            case: #name_str,
+            func: #name,
+        };
+
+        const _: fn() -> Result<(), ::hark::testing::Failure> = #name;
+
+        #func
+    }
+    .into()
+}
 
 // See docstring on the re-export in the hark crate.
 #[proc_macro_attribute]
