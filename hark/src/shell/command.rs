@@ -66,7 +66,7 @@ pub struct CommandSpec {
     pub name: &'static str,
     pub desc: &'static str,
     pub help: &'static str,
-    pub func: fn(args: Args),
+    pub func: fn(args: Args) -> bool,
 }
 
 /// Represents a hark shell command line, or the tail of one.
@@ -206,7 +206,11 @@ pub(super) fn dispatch(command: &str) {
     // TODO: binary search
     for cmd in commands() {
         if name == cmd.name {
-            (cmd.func)(args);
+            if !(cmd.func)(args) {
+                console::write(b"\nInvalid args. Seek help:\n\n");
+                console::write(cmd.desc.as_bytes());
+                console::write_byte(b'\n');
+            }
             return;
         }
     }
@@ -220,20 +224,20 @@ pub(super) fn dispatch(command: &str) {
 /// Prints the command's full description if a command is provided, or else
 /// lists all available commands.
 #[command(help = "List all commands")]
-fn help(mut args: Args) {
-    let Some(name) = args.next() else {
-        list_commands();
-        return;
-    };
-
-    // TODO: binary search
-    for cmd in commands() {
-        if name == cmd.name {
-            console::write(cmd.desc.as_bytes());
-            console::write_byte(b'\n');
-            return;
+fn help(mut args: Args) -> bool {
+    if let Some(name) = args.next() {
+        // TODO: binary search
+        for cmd in commands() {
+            if name == cmd.name {
+                console::write(cmd.desc.as_bytes());
+                console::write_byte(b'\n');
+                return true;
+            }
         }
     }
+
+    list_commands();
+    true
 }
 
 fn list_commands() {

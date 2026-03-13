@@ -18,6 +18,7 @@ extern "Rust" fn hark_app_main() {
 
 /// This is a description of a custom shell command!
 #[shell::command(help = "This is a custom command")]
-fn custom(_: shell::Args) {
+fn custom(_: shell::Args) -> bool {
     println!("The custom command was called!");
+    true
 }

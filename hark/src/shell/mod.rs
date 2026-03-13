@@ -9,9 +9,10 @@ pub use command::*;
 
 /// Registers a function as a command in the hark shell.
 ///
-/// The function must have the signature `fn(`[`Args`]`)`.
-/// A doc comment is required and serves as the long-form description shown
-/// by `help <command>`.
+/// The function must have the signature `fn(`[`Args`]`) -> bool`. A doc comment
+/// is required and serves as the long-form description shown by
+/// `help <command>`. A return value of false signifies invalid arguments, which
+/// will result in that description also being printed to the user.
 ///
 /// ## Parameters
 ///

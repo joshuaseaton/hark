@@ -31,7 +31,7 @@ pub fn shell_command(attr: TokenStream, item: TokenStream) -> TokenStream {
             func: #name,
         };
 
-        const _: fn(::hark::shell::Args) = #name;
+        const _: fn(::hark::shell::Args) -> bool = #name;
 
         #func
     }
