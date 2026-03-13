@@ -23,6 +23,9 @@ pub(crate) fn late_init(thread: &ThreadWitness) {
     backend::late_init(thread);
 }
 
+// Used in sync::InterruptGuard.
+pub(crate) use backend::{InterruptSaveState, restore_interrupt_state, save_interrupt_state};
+
 /// Returns the current CPU number.
 ///
 /// For RISC-V this is the hart ID.

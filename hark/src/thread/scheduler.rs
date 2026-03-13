@@ -10,6 +10,7 @@ use heapless::{Deque, Vec};
 
 use super::{Stack, ThreadId, boot_stack};
 use crate::arch::thread::Context;
+use crate::sync::InterruptGuard;
 
 // TODO: parameterize via environment variable.
 const MAX_NUM_THREADS: usize = 32;
@@ -88,24 +89,25 @@ impl Scheduler {
             state: State::Created,
             _stack: stack,
         };
-        // TODO: critical section start.
-        let id = ThreadId(self.threads.len());
-        let _ = self.threads.push(desc);
-        // TODO: critical section end.
-        id
+        {
+            let _guard = InterruptGuard::new();
+
+            let id = ThreadId(self.threads.len());
+            let _ = self.threads.push(desc);
+            id
+        }
     }
 
     fn start_thread(&mut self, id: ThreadId) {
-        // TODO: critical section start.
+        let _guard = InterruptGuard::new();
+
         let desc = self.get_thread_mut(id);
         assert_eq!(desc.state, State::Created, "thread already started");
         desc.state = State::Ready;
         let _ = self.run_queue.push_back(id);
-        // TODO: critical section end.
     }
 
-    fn switch_to(&mut self, next_id: ThreadId, old_state: State) {
-        // TODO: critical section
+    fn switch_to(&mut self, _: &InterruptGuard, next_id: ThreadId, old_state: State) {
         let current_id = self.current;
         self.get_thread_mut(current_id).state = old_state;
         if old_state == State::Ready {
@@ -120,7 +122,8 @@ impl Scheduler {
     }
 
     fn reschedule(&mut self, old_state: State) {
-        // TODO: critical section
+        let guard = InterruptGuard::new();
+
         let Some(next_id) = self.run_queue.pop_front() else {
             assert!(old_state != State::Exited, "all threads exited");
             return;
@@ -128,6 +131,6 @@ impl Scheduler {
         if next_id == self.current {
             return;
         }
-        self.switch_to(next_id, old_state);
+        self.switch_to(&guard, next_id, old_state);
     }
 }

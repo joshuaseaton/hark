@@ -11,6 +11,7 @@ pub mod debug;
 pub mod heap;
 pub mod platform;
 pub mod shell;
+pub mod sync;
 pub mod thread;
 
 mod panic;

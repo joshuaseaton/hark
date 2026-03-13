@@ -173,6 +173,19 @@ pub fn get_ticks() -> u64 {
     timer::read_time()
 }
 
+// Whether the MIE bit is set.
+pub type InterruptSaveState = bool;
+
+#[inline]
+pub fn save_interrupt_state() -> InterruptSaveState {
+    Mstatus::from(0).set_mie(true).atomic_clear_bits().mie()
+}
+
+#[inline]
+pub fn restore_interrupt_state(state: InterruptSaveState) {
+    Mstatus::from(0).set_mie(state).atomic_set_bits();
+}
+
 #[inline]
 pub fn enable_interrupts() {
     Mstatus::from(0).set_mie(true).atomic_set_bits();
