@@ -177,16 +177,14 @@ fn enter() -> ! {
                     cursor = displayed.len();
                     move_cursor(&mut cursor, new_cursor);
                 }
-                BACKSPACE => {
-                    if cursor > 0 {
-                        displayed.remove(cursor - 1);
-                        let new_cursor = cursor - 1;
-                        console::write_byte(CURSOR_LEFT);
-                        console::write(&displayed[cursor - 1..]);
-                        console::write_byte(b' ');
-                        cursor = displayed.len() + 1;
-                        move_cursor(&mut cursor, new_cursor);
-                    }
+                BACKSPACE if cursor > 0 => {
+                    displayed.remove(cursor - 1);
+                    let new_cursor = cursor - 1;
+                    console::write_byte(CURSOR_LEFT);
+                    console::write(&displayed[cursor - 1..]);
+                    console::write_byte(b' ');
+                    cursor = displayed.len() + 1;
+                    move_cursor(&mut cursor, new_cursor);
                 }
                 _ => {}
             }
