@@ -10,16 +10,21 @@ pub mod arch;
 pub mod debug;
 pub mod heap;
 pub mod platform;
-pub mod shell;
 pub mod sync;
-pub mod testing;
 pub mod thread;
+
+#[cfg_attr(not(feature = "shell"), allow(unused))]
+pub mod shell;
+
+#[cfg_attr(not(feature = "tests"), allow(unused))]
+pub mod testing;
 
 mod panic;
 pub(crate) use panic::*;
 
-// Allows #[shell::command] works within hark, since its expansion includes item
-// paths under `::hark::shell`.
+// Allows #[crate::shell::command] and #[crate::test] to work within hark, since
+// their expansions include item paths under `::hark::shell` and
+// `::hark::testing`, respectively.
 #[doc(hidden)]
 extern crate self as hark;
 
@@ -120,7 +125,10 @@ extern "C" fn hark_main() {
 
     arch::late_init(&thread);
 
+    #[cfg(feature = "tests")]
     testing::init();
+
+    #[cfg(feature = "shell")]
     shell::run_in_background();
 
     unsafe {

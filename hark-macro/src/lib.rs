@@ -27,8 +27,14 @@ pub fn hark_test(attr: TokenStream, item: TokenStream) -> TokenStream {
     let name_str = name.to_string();
     let const_name = format_ident!("HARK_TEST_{}", name_str.to_uppercase());
 
+    #[cfg(feature = "tests")]
+    let used = quote! {#[used] };
+
+    #[cfg(not(feature = "tests"))]
+    let used = quote! {};
+
     quote! {
-        #[used]
+        #used
         #[unsafe(link_section = ".data.hark.tests")]
         static #const_name: ::hark::testing::TestSpec = ::hark::testing::TestSpec {
             suite: module_path!(),
@@ -55,8 +61,14 @@ pub fn shell_command(attr: TokenStream, item: TokenStream) -> TokenStream {
     let name = cmd.name().clone();
     let Command { func, doc } = cmd;
 
+    #[cfg(feature = "shell")]
+    let used = quote! {#[used] };
+
+    #[cfg(not(feature = "shell"))]
+    let used = quote! {};
+
     quote! {
-        #[used]
+        #used
         #[unsafe(link_section = ".data.hark.commands")]
         static #const_name: ::hark::shell::CommandSpec = ::hark::shell::CommandSpec {
             name: #name_str,

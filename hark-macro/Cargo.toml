@@ -17,6 +17,11 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 
+[features]
+default = []
+shell = []
+tests = []
+
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"

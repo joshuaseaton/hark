@@ -54,18 +54,22 @@ SECTIONS {
      * Hark shell command metadata. Put in .data over .rodata so that the
      * entries can be sorted in the shell's initialization. This allows for a
      * cheap ordered listing of commands.
+     *
+     * Entries should end up GC'ed if the "shell" feature is not enabled.
      */
     __data_hark_commands_start = .;
-    KEEP(*(.data.hark.commands))
+    *(.data.hark.commands)
     __data_hark_commands_end = .;
 
     /*
      * Hark test metadata. Similarly put in .data over .rodata so that entries
      * can be sorted early in boot.
+     *
+     * Entries should end up GC'ed if the "tests" feature is not enabled.
      */
     . = ALIGN(8);
     __data_hark_tests_start = .;
-    KEEP(*(.data.hark.tests))
+    *(.data.hark.tests)
     __data_hark_tests_end = .;
 
     . = ALIGN(8);

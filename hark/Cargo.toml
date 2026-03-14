@@ -19,6 +19,16 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 
+[features]
+default = ["shell", "tests"]
+
+# Enables use of the shell. Without it, any defined shell commands are GC'ed.
+shell = ["hark-macro/shell"]
+
+# Enables use of the test framework, which is run out of the shell. Without it,
+# any defined tests are GC'ed.
+tests = ["shell", "hark-macro/tests"]
+
 [build-dependencies]
 hark-build = { path = "../hark-build" }
 serde = { version = "1.0", features = ["derive"] }
