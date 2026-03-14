@@ -80,12 +80,12 @@ unsafe extern "C" fn trampoline() {
     naked_asm!(
         // We may be jumping onto the trampoline from an interrupt context, in
         // which case this the opportunity to re-enable interrupts.
-        "csrsi mstatus, {mie_mask}",
+        "csrsi mstatus, {mstatus_mie_mask}",
         "mv a0, s2",
         "jalr s1",
         // If we return, then we tail into the thread exit routine.
         "tail {thread_exit}",
-        mie_mask = const (1 << Mstatus::MIE_BIT), // TODO: Why no MIE_MASK?
+        mstatus_mie_mask = const Mstatus::MIE_MASK,
         thread_exit = sym thread_exit,
     );
 }
