@@ -25,3 +25,4 @@ syn = "2.0"
 
 [lib]
 proc-macro = true
+doc = false

@@ -5,7 +5,13 @@
 # https://opensource.org/licenses/MIT
 
 [workspace]
-members = [ "example", "hark", "hark-build", "lib/*" ]
+members = [
+    "example",
+    "hark",
+    "hark-build",
+    "hark-macro",
+    "lib/*",
+]
 default-members = [ "example", "hark", "lib/*" ]
 resolver = "3"
 
