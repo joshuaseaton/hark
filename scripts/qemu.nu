@@ -24,17 +24,21 @@ export def main [
     let board_flags = $qemu_settings
         | transpose key value
         | each { |setting|
-            let flag = match $setting.key {
-                "cpu" => "-cpu",
-                "machine" => "-machine"
-                "memory" => "-m"
+            match $setting.key {
+                "boot_medium" => {
+                    match $setting.value {
+                        "pflash" => [-drive $"if=pflash,file=($flattened),format=raw,unit=0"]
+                        _ => { error make --unspanned $"unknown boot medium \"($setting.value)\"" }
+                    }
+                }
+                "cpu" => ["-cpu" $setting.value ],
+                "machine" => ["-machine" $setting.value],
+                "memory" => ["-m" $setting.value],
                 "flash_size" => {
                     ^truncate -s $setting.value $flattened
-                }
+                    []
+                },
                 _ => { error make --unspanned $"unknown QEMU setting \"($setting.key)\"" }
-            }
-            if ($flag | is-not-empty) {
-                [$flag $setting.value]
             }
         }
         | flatten
@@ -46,8 +50,6 @@ export def main [
     let command = [
         $"qemu-system-($arch)"
          -bios none
-        # Boot in place out of flash.
-        -drive $"if=pflash,file=($flattened),format=raw,unit=0"
         -nographic
     ] | append $board_flags
 

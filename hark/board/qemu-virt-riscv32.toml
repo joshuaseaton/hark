@@ -13,7 +13,8 @@ boot_ram_address = 0x8000_0000
 boot_ram_size = 0x1_0000
 
 [qemu]
+boot_medium = "pflash"
 cpu = "rv32,h=false,s=false"
+flash_size = "32M"
 machine = "virt"
 memory = "64K"
-flash_size = "32M"
