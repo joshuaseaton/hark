@@ -23,9 +23,8 @@ pub const MAX_IRQ: u32 = 96;
 pub const TIMER_FREQUENCY: u64 = 10_000_000; // 10 MHz
 
 // Constrained to 64KiB for discipline's sake.
-// TODO: bring this down.
 pub const RAM: heap::Range = heap::Range {
-    start: 0x8010_0000,
+    start: 0x8000_0000,
     size: 0x0001_0000,
 };
 

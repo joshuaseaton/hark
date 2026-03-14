@@ -8,18 +8,12 @@ platform = "qemu-virt-riscv"
 boot_flash_address = 0x2000_0000
 boot_flash_size = 0x200_0000
 
-# For size discipline, we constrain the available boot RAM. However, The QEMU
-# RISC-V virt machine however insists upon loading a dtb, which necessarily
-# occupies the base of RAM at 0x8000_0000 in our case. So that we don't have to
-# work around the dtb load image and so that .data/.bss addresses end up nicely
-# aligned, we adopt the convention that boot RAM actually starts 1MiB past the
-# actual base.
-boot_ram_address = 0x8010_0000
+# For size discipline, we constrain the available boot RAM to 64KiB.
+boot_ram_address = 0x8000_0000
 boot_ram_size = 0x1_0000
 
 [qemu]
 cpu = "rv32,h=false,s=false"
 machine = "virt"
-# boot RAM (64Kib) at a 1MiB offset. See above.
-memory = "1088K"
+memory = "64K"
 flash_size = "32M"

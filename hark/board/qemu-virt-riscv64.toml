@@ -8,14 +8,13 @@ platform = "qemu-virt-riscv"
 boot_flash_address = 0x2000_0000
 boot_flash_size = 0x200_0000
 
-# See qemu-virt-riscv32.toml for rationale.
-boot_ram_address = 0x8010_0000
-boot_ram_size = 0x1_0000 # Keep in sync with qemu-virt-riscv32.toml
+# For size discipline, we constrain the available boot RAM to 64KiB.
+# (Keep in sync with qemu-virt-riscv32.toml.)
+boot_ram_address = 0x8000_0000
+boot_ram_size = 0x1_0000
 
 [qemu]
 cpu = "rv64,h=false,s=false"
 machine = "virt"
-# boot RAM (64Kib) at a 1MiB offset. See qemu-virt-riscv32.toml and keep this in
-# sync.
-memory = "1088K"
+memory = "64K"
 flash_size = "32M"
