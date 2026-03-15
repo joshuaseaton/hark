@@ -12,6 +12,7 @@ mod time;
 pub use time::Time;
 
 #[cfg_attr(platform = "qemu-virt-riscv", path = "backend/qemu_virt_riscv.rs")]
+#[cfg_attr(platform = "sifive-fe310", path = "backend/sifive_fe310.rs")]
 mod backend;
 
 cfg_if::cfg_if! {

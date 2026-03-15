@@ -4,8 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
+mod null;
 mod sifive_test;
 
+pub type NullPowerManager = null::PowerManager;
 pub use sifive_test::SiFiveTest;
 
 pub trait Manager {

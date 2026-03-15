@@ -19,6 +19,7 @@ export def main [
 
     let result = if $release { build --release } else { build }
     let flattened = $result.flattened
+    let elf = $result.elf
     let qemu_settings = open $result.config | get qemu
 
     let board_flags = $qemu_settings
@@ -28,12 +29,13 @@ export def main [
                 "boot_medium" => {
                     match $setting.value {
                         "pflash" => [-drive $"if=pflash,file=($flattened),format=raw,unit=0"]
+                        "elf" => [-kernel $elf]
                         _ => { error make --unspanned $"unknown boot medium \"($setting.value)\"" }
                     }
                 }
-                "cpu" => ["-cpu" $setting.value ],
-                "machine" => ["-machine" $setting.value],
-                "memory" => ["-m" $setting.value],
+                "cpu" => ["-cpu" $setting.value ]
+                "machine" => ["-machine" $setting.value]
+                "memory" => ["-m" $setting.value]
                 "flash_size" => {
                     ^truncate -s $setting.value $flattened
                     []
@@ -60,7 +62,7 @@ export def main [
     # Set up .build-id directory for llvm-symbolizer --filter-markup.
     # TODO: Update llvm-symbolizer so that `llvm-symbolizer --obj $system` can
     # work without a .build-id directory. 
-    let build_id = (^llvm-readelf -n $result.elf
+    let build_id = (^llvm-readelf -n $elf
         | lines
         | find "Build ID"
         | get 0
@@ -72,7 +74,7 @@ export def main [
     let bid_suffix = ($build_id | str substring 2..)
     let bid_dir = [ target .build-id $bid_prefix ] | path join
     mkdir $bid_dir
-    ^ln -sf ($result.elf| path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
+    ^ln -sf ($elf| path expand) ([$bid_dir $"($bid_suffix).debug"] | path join)
 
     run-external $command.0 ...($command | skip 1)
         | (

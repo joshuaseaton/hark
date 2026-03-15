@@ -4,7 +4,7 @@
     "clippy",
     "--message-format=json"
   ],
-  "rust-analyzer.diagnostics.warningsAsHint": ["dead_code"],
+  "rust-analyzer.diagnostics.warningsAsHint": ["dead_code", "unused"],
   "rust-analyzer.linkedProjects": [
     "Cargo.toml",
     "hark-build/Cargo.toml"

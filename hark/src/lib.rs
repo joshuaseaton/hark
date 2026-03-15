@@ -38,7 +38,7 @@ pub use hark_macro::hark_test as test;
 // the lint in clippy's analysis and downgrade the warning to a hint with
 // the rust-analyzer.diagnostics.warningsAsHint option. This keeps dead code as
 // greyed out in the editor, but not with squiggles.
-#[cfg_attr(not(clippy), allow(dead_code))]
+#[cfg_attr(not(clippy), allow(dead_code, unused))]
 pub(crate) mod dev;
 
 use core::fmt;

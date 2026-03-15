@@ -5,6 +5,8 @@
 // https://opensource.org/licenses/MIT
 
 pub mod ns8250;
+pub mod null;
+pub mod sifive;
 
 use core::fmt;
 
@@ -13,6 +15,8 @@ use regio::{IoBackend, Mmio};
 use crate::dev::Console;
 
 pub type Ns8250 = Driver<ns8250::Base<Mmio<u8>>>;
+pub type Null = Driver<null::Base>;
+pub type SiFive = Driver<sifive::Base>;
 
 pub trait DriverBase {
     type Io: IoBackend;

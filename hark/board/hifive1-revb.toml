@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Joshua Seaton
+#
+# Use of this source code is governed by a MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT
+
+platform = "sifive-fe310"
+boot_flash_address = 0x2001_0000
+boot_flash_size = 0x3f_0000
+boot_ram_address = 0x8000_0000
+boot_ram_size = 0x4000
+
+[qemu]
+# In actuality, the HiFive1 RevB boots out of SPI flash. However, it seems the
+# only way currently to boot with the `sifive_e` machine is under `-kernel $elf`
+boot_medium = "elf"
+cpu = "sifive-e31"
+machine = "sifive_e,revb=true"
