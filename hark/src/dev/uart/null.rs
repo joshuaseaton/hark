@@ -26,13 +26,17 @@ impl DriverBase for Base {
 
     fn init(_: &Self::Io, (): &mut Self::State) {}
 
-    fn tx_ready(_: &Self::Io) -> bool {
+    fn tx_fifo_is_empty(_: &Self::Io) -> bool {
         true
     }
     fn read_byte(_: &Self::Io) -> Option<u8> {
         None
     }
-    fn fill_fifo(_: &Self::Io, (): &Self::State, bytes: &mut impl Iterator<Item = u8>) -> bool {
+    fn fill_empty_tx_fifo(
+        _: &Self::Io,
+        (): &Self::State,
+        bytes: &mut impl Iterator<Item = u8>,
+    ) -> bool {
         for _ in bytes {}
         false
     }

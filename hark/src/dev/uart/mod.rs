@@ -25,14 +25,21 @@ pub trait DriverBase {
     fn io(base: usize) -> Self::Io;
     fn describe(w: &mut impl fmt::Write, state: &Self::State);
     fn init(io: &Self::Io, state: &mut Self::State);
-    fn tx_ready(io: &Self::Io) -> bool;
+
+    fn tx_fifo_is_empty(io: &Self::Io) -> bool;
+
     fn read_byte(io: &Self::Io) -> Option<u8>;
 
-    // Writes as many bytes to the FIFO as possible, returning true if it was
-    // able to fill it fully, and thus false if the iterator was exhausted.
+    // Writes as many bytes to an empty FIFO as possible, returning true if it
+    // was able to fill it fully, and otherwise false if the iterator was
+    // exhausted before it could do so.
     //
     // Assumes the FIFO is empty.
-    fn fill_fifo(io: &Self::Io, state: &Self::State, bytes: &mut impl Iterator<Item = u8>) -> bool;
+    fn fill_empty_tx_fifo(
+        io: &Self::Io,
+        state: &Self::State,
+        bytes: &mut impl Iterator<Item = u8>,
+    ) -> bool;
 }
 
 // A generic UART driver.
@@ -61,8 +68,8 @@ impl<Base: DriverBase> Console for Driver<Base> {
     fn write(&self, bytes: &[u8]) {
         let mut it = CrlfByteIterator::new(bytes);
         loop {
-            while !Base::tx_ready(&self.io) {}
-            if !Base::fill_fifo(&self.io, &self.state, &mut it) {
+            while !Base::tx_fifo_is_empty(&self.io) {}
+            if !Base::fill_empty_tx_fifo(&self.io, &self.state, &mut it) {
                 break;
             }
         }

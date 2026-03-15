@@ -121,7 +121,7 @@ impl DriverBase for Base {
             .write_to(io);
     }
 
-    fn tx_ready(io: &Self::Io) -> bool {
+    fn tx_fifo_is_empty(io: &Self::Io) -> bool {
         // We set txcnt to 1, so this should only be true when empty.
         InterruptPendingRegister::read_from(io).txwm()
     }
@@ -131,7 +131,11 @@ impl DriverBase for Base {
         (!rx.empty()).then(|| rx.data())
     }
 
-    fn fill_fifo(io: &Self::Io, (): &Self::State, bytes: &mut impl Iterator<Item = u8>) -> bool {
+    fn fill_empty_tx_fifo(
+        io: &Self::Io,
+        (): &Self::State,
+        bytes: &mut impl Iterator<Item = u8>,
+    ) -> bool {
         let mut space = FIFO_SIZE;
         while space > 0 {
             let Some(byte) = bytes.next() else {

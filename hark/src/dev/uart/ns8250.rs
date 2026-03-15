@@ -256,7 +256,7 @@ impl<Io: UartIo> DriverBase for Base<Io> {
         };
     }
 
-    fn tx_ready(io: &Io) -> bool {
+    fn tx_fifo_is_empty(io: &Io) -> bool {
         LineStatusRegister::read_from(io).tx_register_empty()
     }
 
@@ -266,7 +266,7 @@ impl<Io: UartIo> DriverBase for Base<Io> {
             .then(|| *RxBufferRegister::read_from(io))
     }
 
-    fn fill_fifo(io: &Io, state: &State, bytes: &mut impl Iterator<Item = u8>) -> bool {
+    fn fill_empty_tx_fifo(io: &Io, state: &State, bytes: &mut impl Iterator<Item = u8>) -> bool {
         let mut space = state.fifo_depth;
         while space > 0 {
             let Some(byte) = bytes.next() else {
