@@ -9,3 +9,4 @@ include = [ { path = "board.toml", optional = true } ]
 [unstable]
 build-std = [ "core" ]
 build-std-features = [ "compiler-builtins-mem" ]
+json-target-spec = true
