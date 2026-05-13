@@ -20,9 +20,8 @@ macro_rules! frame_pointer {
 #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
 use riscv::Arch;
 
-cfg_if::cfg_if! {
-    if #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))] {
-
+cfg_select! {
+    any(target_arch = "riscv64", target_arch = "riscv32") => {
         // The common architectural interface.
         trait ArchCommon {
             fn call_frame(fp: usize) -> CallFrame;
@@ -65,4 +64,5 @@ cfg_if::cfg_if! {
             }
         }
     }
+    _ => {}
 }

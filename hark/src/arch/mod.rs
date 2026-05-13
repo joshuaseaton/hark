@@ -4,11 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT
 
-cfg_if::cfg_if! {
-    if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+cfg_select! {
+    any(target_arch = "riscv32", target_arch = "riscv64") => {
         mod riscv;
         use riscv as backend;
     }
+    _ => {}
 }
 
 pub(crate) use backend::thread;

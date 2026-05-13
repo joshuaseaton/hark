@@ -15,8 +15,8 @@ pub use time::Time;
 #[cfg_attr(platform = "sifive-fe310", path = "backend/sifive_fe310.rs")]
 mod backend;
 
-cfg_if::cfg_if! {
-    if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+cfg_select! {
+    any(target_arch = "riscv32", target_arch = "riscv64") => {
         // While the CLINT/ACLINT MTIMER is a feature of the RISC-V
         // architecture, its MMIO addresses are platform-defined. So we violate
         // the arch-platform layering by a teensy amount to export these values
@@ -24,6 +24,7 @@ cfg_if::cfg_if! {
         pub(crate) use backend::RISCV_MTIMER_TIME_ADDRESS;
         pub(crate) use backend::RISCV_MTIMER_TIMECMP_ADDRESS;
     }
+    _ => {}
 }
 
 // TODO: Generalize this to a list when needed.

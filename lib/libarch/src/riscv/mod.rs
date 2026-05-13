@@ -26,8 +26,8 @@ macro_rules! __frame_pointer {
     }};
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
+cfg_select! {
+    any(doc, target_arch = "riscv32", target_arch = "riscv64") => {
         use core::ptr;
 
         use crate::{CallFrame, ArchCommon};
@@ -46,4 +46,5 @@ cfg_if::cfg_if! {
             }
         }
     }
+    _ => {}
 }

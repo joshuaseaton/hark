@@ -37,8 +37,8 @@ struct Mtime(u64);
 #[derive(Debug, Deref, From)]
 struct Mtimecmp(u64);
 
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "riscv32")] {
+cfg_select! {
+    target_arch = "riscv32" => {
         use regio::{IoBackend, Offset};
 
         struct MtimeIo(Mmio<u32>);
@@ -145,13 +145,15 @@ cfg_if::cfg_if! {
             }
         }
     }
+    _ => {}
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "riscv64")] {
+cfg_select! {
+    target_arch = "riscv64" => {
         type TimeIo = Mmio<u64>;
         type TimerIo = Mmio<u64>;
-    } else {
+    }
+    _ => {
         type TimeIo = MtimeIo;
         type TimerIo = MtimecmpIo;
     }

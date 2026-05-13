@@ -173,8 +173,8 @@ macro_rules! call {
 #[doc(inline)]
 pub use crate::call;
 
-cfg_if::cfg_if! {
-    if #[cfg(any(doc, target_arch = "riscv32", target_arch = "riscv64"))] {
+cfg_select! {
+    any(doc, target_arch = "riscv32", target_arch = "riscv64") => {
         //
         // Base extension functions
         //
@@ -311,4 +311,5 @@ cfg_if::cfg_if! {
             }
         }
     }
+    _ => {}
 }

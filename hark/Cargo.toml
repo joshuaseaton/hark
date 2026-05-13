@@ -37,7 +37,6 @@ toml = "1.0"
 
 [dependencies]
 bitfld = "0.9"
-cfg-if = "1.0"
 derive_more = {version = "2.1", default-features = false, features = ["deref", "from"]}
 hark-macro = { path = "../hark-macro" }
 libarch = { path = "../lib/libarch" }

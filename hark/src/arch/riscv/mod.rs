@@ -19,11 +19,12 @@ use crate::{ConsoleWitness, ThreadWitness, print, println};
 #[used]
 static mut PERCPU: [PerCpu; 1] = [const { unsafe { mem::zeroed() } }; 1];
 
-cfg_if::cfg_if! {
-    if #[cfg(target_pointer_width = "32")] {
+cfg_select! {
+    target_pointer_width = "32" => {
         macro_rules! store { ($args:literal) => { concat!("sw ", $args) }; }
         macro_rules! load { ($args:literal) => { concat!("lw ", $args) }; }
-    } else {
+    }
+    _ => {
         macro_rules! store { ($args:literal) => { concat!("sd ", $args) }; }
         macro_rules! load { ($args:literal) => { concat!("ld ", $args) }; }
     }
